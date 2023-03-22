@@ -24,8 +24,8 @@ buildscript {
     }
 }
 
-sourceCompatibility = 19                        //add according to your project SDK
-targetCompatibility = 19                        //add according to your project SDK
+sourceCompatibility = 11                        //add according to your project SDK
+targetCompatibility = 11                        //add according to your project SDK
 
 ext {
     slf4jVersion = '2.0.5'

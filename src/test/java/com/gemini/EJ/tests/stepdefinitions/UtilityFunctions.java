@@ -60,25 +60,35 @@ public class UtilityFunctions extends PageObject {
     public static void makeRequest(String reqType) {
         Response response = null;
         switch (reqType.toLowerCase()) {
-            case "get" -> response = reqSpecList.get(activeIndex)
-                    .log().all()
-                    .when().get();
-            case "post" -> response = reqSpecList.get(activeIndex)
-                    .log().all()
-                    .when().post();
-            case "put" -> response = reqSpecList.get(activeIndex)
-                    .log().all()
-                    .when().put();
-            case "patch" -> response = reqSpecList.get(activeIndex)
-                    .log().all()
-                    .when().patch();
-            case "delete" -> response = reqSpecList.get(activeIndex)
-                    .log().all()
-                    .when().delete();
-            default -> {
+            case "get":
+                response = reqSpecList.get(activeIndex)
+                        .log().all()
+                        .when().get();
+                break;
+            case "post":
+                response = reqSpecList.get(activeIndex)
+                        .log().all()
+                        .when().post();
+                break;
+            case "put":
+                response = reqSpecList.get(activeIndex)
+                        .log().all()
+                        .when().put();
+                break;
+            case "patch":
+                response = reqSpecList.get(activeIndex)
+                        .log().all()
+                        .when().patch();
+                break;
+            case "delete":
+                response = reqSpecList.get(activeIndex)
+                        .log().all()
+                        .when().delete();
+                break;
+            default:
                 logger.info("No such request type");
                 Assert.fail("No such request type");
-            }
+
         }
         logger.info("\n\nResponse Body:\n" + response.getBody().asPrettyString());
         responseList.add(response);
@@ -121,9 +131,10 @@ public class UtilityFunctions extends PageObject {
                     logger.info("No value found for for provided key: \"" + pathProvided + "\"");
                     Assert.fail("No value found for for provided key: \"" + pathProvided + "\"");
                 }
-            } else if (valueFoundAtPath instanceof ArrayList arr)
+            } else if (valueFoundAtPath instanceof ArrayList) {
+                ArrayList arr = (ArrayList) valueFoundAtPath;
                 arrSize = arr.size();
-            else {
+            }else {
                 logger.info("Value of provided key: " + pathProvided + " is not a JSONArray. Can't validate the size");
                 Assert.fail("Value of provided key: " + pathProvided + " is not a JSONArray. Can't validate the size");
             }
@@ -175,7 +186,8 @@ public class UtilityFunctions extends PageObject {
             if (ObjectUtils.allNull(valueFoundAtPath)) {
                 logger.info("No value found for for provided key: \"" + pathProvided + "\"");
                 Assert.fail("No value found for for provided key: \"" + pathProvided + "\"");
-            } else if (valueFoundAtPath instanceof ArrayList arr) {
+            } else if (valueFoundAtPath instanceof ArrayList) {
+                ArrayList arr = (ArrayList) valueFoundAtPath;
                 if (!(arr.get(0) instanceof JSONObject)) {
                     boolean found = false;
                     for (Object obj : arr) {
