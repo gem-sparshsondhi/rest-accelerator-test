@@ -149,6 +149,34 @@ public class UtilityFunctions extends PageObject {
     }
 
     /**
+     * Adds a file to be uploaded. Also sets the contentType of the active request to "multipart/form-data" automatically
+     * <p>
+     * MIME type is auto-set
+     * @param controlName
+     * @param filename
+     */
+    public static void addMultipartFileToRequest(String controlName, String filename) {
+        if (filename.split("\\.").length == 1)
+            Assert.fail("No File extension detected. Please provide filename with extension");
+        File file = new File("src/test/resources/multipartfiles/" + filename);
+        reqSpecList.get(activeIndex).multiPart(controlName, file);
+    }
+
+    /**
+     * Adds a file to be uploaded. Also sets the contentType of the active request to "multipart/form-data" automatically
+     * <p>Sets the MIME type according to the parameter passed
+     * @param controlName
+     * @param filename
+     * @param mimeType
+     */
+    public static void addMultipartFileToRequest(String controlName, String filename, String mimeType) {
+        if (filename.split("\\.").length == 1)
+            Assert.fail("No File extension detected. Please provide filename with extension");
+        File file = new File("src/test/resources/multipartfiles/" + filename);
+        reqSpecList.get(activeIndex).multiPart(controlName, file,mimeType);
+    }
+
+    /**
      * Initiates a request based on the latest RequestSpecification.<p>
      * The Response is then saved into another List, with the same index as the RequestSpecification that created it.
      *
@@ -379,6 +407,7 @@ public class UtilityFunctions extends PageObject {
      * Verifies whether the length of the specified JSONArray (Using JsonPath) matches expectations in the specified response
      * <p>
      * Uses JsonPath to search for the value and verifies if it is a JSONArray or not beforehand.
+     *
      * @param pathProvided
      * @param size
      */

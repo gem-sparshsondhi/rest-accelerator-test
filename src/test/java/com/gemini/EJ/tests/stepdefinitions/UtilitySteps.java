@@ -48,12 +48,13 @@ public class UtilitySteps {
             UtilityFunctions.addQueryParam(param.get("Name"), param.get("Value"));
         }
     }
+
     @When("^User adds multiple Query Parameters$")
     public void addMultipleQueryParamsToRequest(DataTable dt) {
         List<Map<String, String>> params = dt.asMaps();
-        HashMap<String ,String> param = new HashMap<>();
-        for(String key : params.get(0).keySet()){
-            param.put(key,params.get(0).get(key));
+        HashMap<String, String> param = new HashMap<>();
+        for (String key : params.get(0).keySet()) {
+            param.put(key, params.get(0).get(key));
         }
         UtilityFunctions.addQueryParams(param);
     }
@@ -76,6 +77,16 @@ public class UtilitySteps {
     @And("^user sets request body from \"(.*?)\" file$")
     public void userSetsRequestBodyFromFile(String fileName) {
         UtilityFunctions.userSetsRequestBodyFromFile(fileName);
+    }
+
+    @And("^user adds multipart file \"(.*?)\" with \"(.*?)\" control name$")
+    public void addMultipartFileToRequest(String fileName, String controlName) {
+        UtilityFunctions.addMultipartFileToRequest(controlName, fileName);
+    }
+
+    @And("^user adds multipart file \"(.*?)\" with \"(.*?)\" control name and \"(.*?)\" MIME type$")
+    public void addMultipartFileToRequest(String fileName, String controlName, String mimeType) {
+        UtilityFunctions.addMultipartFileToRequest(controlName, fileName, mimeType);
     }
 
     @Then("^User makes a \"(.*?)\" request$")

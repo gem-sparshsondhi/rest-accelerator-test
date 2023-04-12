@@ -9,6 +9,8 @@ Feature: RestAssured CommonFunction Request Creation Tests. Batch functionality 
     And User sets Content-Type as "application/json"
     And User sets relaxed HTTPS validation
     And User sets url encoding to "false"
+    And user adds multipart file "SampleMultipartFile.txt" with "file" control name
+    And user adds multipart file "SampleMultipartFile.txt" with "file" control name and "text/html" MIME type
     And User adds headers
       | Name    | Value  |
       | header1 | value1 |
