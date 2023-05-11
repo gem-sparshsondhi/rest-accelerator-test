@@ -4,8 +4,6 @@ import io.cucumber.datatable.DataTable;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import net.serenitybdd.core.environment.EnvironmentSpecificConfiguration;
-import net.thucydides.core.environment.SystemEnvironmentVariables;
 import org.junit.Assert;
 
 import java.util.HashMap;
@@ -13,8 +11,6 @@ import java.util.List;
 import java.util.Map;
 
 public class UtilitySteps {
-    EnvironmentSpecificConfiguration envConfig = EnvironmentSpecificConfiguration.from(SystemEnvironmentVariables.createEnvironmentVariables());
-
 
     //-----------------------------------------Request building functions-----------------------------------------//
 

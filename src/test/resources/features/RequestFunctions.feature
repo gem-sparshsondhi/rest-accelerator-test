@@ -1,4 +1,4 @@
-@RestTests @RequestTest
+@RestTests
 Feature: RestAssured CommonFunction Request Creation Tests. Batch functionality verification
 
   @RequestTest
@@ -6,7 +6,7 @@ Feature: RestAssured CommonFunction Request Creation Tests. Batch functionality 
     Given User creates a new request
     And User sets base URI as "http://localhost:3000"
     And User sets path as "/items"
-    And User sets Content-Type as "application/json"
+    And User sets Content-Type as "multipart/form-data"
     And User sets relaxed HTTPS validation
     And User sets url encoding to "false"
     And user adds multipart file "SampleMultipartFile.txt" with "file" control name

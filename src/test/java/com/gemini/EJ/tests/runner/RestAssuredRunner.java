@@ -9,7 +9,6 @@ import org.junit.runner.RunWith;
 @CucumberOptions(
         features = "src/test/resources/features"
         ,glue = "com.gemini.EJ.tests.stepdefinitions"
-        ,tags="@RequestTest"
 )
 public class RestAssuredRunner {
 }
