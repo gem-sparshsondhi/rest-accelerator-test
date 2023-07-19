@@ -16,6 +16,6 @@ Files not directly linked to code:
 * src/test/resources/fake-server-API/DB_data.json
 * src/test/resources/fake-server-API/ReceivedResponse.json
 
-The abovw 2 files outline the data present at http://localhost:3000 and http://localhost:3000/items respectively. This data has been used to test the Utility functions, and can be utilized for further testing with the setup of Fake-Server from the typicode repository
+The above 2 files outline the data present at http://localhost:3000 and http://localhost:3000/items respectively. This data has been used to test the Utility functions, and can be utilized for further testing with the setup of Fake-Server from the typicode repository
 
 Typicode Repository: https://github.com/typicode/json-server.git
