@@ -3,8 +3,8 @@ Feature: RestAssured CommonFunction Validation Tests. Batch functionality verifi
 
   Background: Get the response
     Given User creates a new request
-    And User sets base URI as "http://localhost:3000"
-    And User sets path as "/items"
+    And User sets "http://localhost:3000" as base URI
+    And User sets "/items" as path
     Then User makes a "get" request
 
   @validationsTest

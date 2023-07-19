@@ -4,8 +4,8 @@ Feature: RestAssured CommonFunction Request Creation Tests. Batch functionality 
   @RequestTest
   Scenario: Verify all request creation functions
     Given User creates a new request
-    And User sets base URI as "http://localhost:3000"
-    And User sets path as "/items"
+    And User sets "http://localhost:3000" as base URI
+    And User sets "/items" as path
     And User sets Content-Type as "multipart/form-data"
     And User sets relaxed HTTPS validation
     And User sets url encoding to "false"
@@ -17,8 +17,8 @@ Feature: RestAssured CommonFunction Request Creation Tests. Batch functionality 
     Then User makes a "get" request
 
     When User creates a new request
-    And User sets base URI as "http://localhost:3000"
-    And User sets path as "/items"
+    And User sets "http://localhost:3000" as base URI
+    And User sets "/items" as path
     And User sets Content-Type as "application/json"
     And User sets relaxed HTTPS validation
     And User sets url encoding to "false"
@@ -34,8 +34,8 @@ Feature: RestAssured CommonFunction Request Creation Tests. Batch functionality 
 
     #below is to return the API response data back to normal
     When User creates a new request
-    And User sets base URI as "http://localhost:3000"
-    And User sets path as "/items"
+    And User sets "http://localhost:3000" as base URI
+    And User sets "/items" as path
     And User sets Content-Type as "application/json"
     And User sets relaxed HTTPS validation
     And User sets url encoding to "false"

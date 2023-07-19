@@ -19,12 +19,12 @@ public class UtilitySteps {
         UtilityFunctions.createNewRequest();
     }
 
-    @When("^User sets base URI as \"(.*?)\"$")
+    @When("^User sets \"(.*?)\" as base URI$")
     public void setBaseURI(String URI) {
         UtilityFunctions.setBaseURI(URI);
     }
 
-    @When("^User sets path as \"(.*?)\"$")
+    @When("^User sets \"(.*?)\" as path$")
     public void setBasePath(String path) {
         UtilityFunctions.setBasePath(path);
     }

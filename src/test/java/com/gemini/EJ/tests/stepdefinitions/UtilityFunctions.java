@@ -1,6 +1,7 @@
 package com.gemini.EJ.tests.stepdefinitions;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
+import io.restassured.http.Header;
 import io.restassured.module.jsv.JsonSchemaValidator;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
@@ -18,10 +19,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class UtilityFunctions extends PageObject {
     public static Logger logger = LoggerFactory.getLogger(UtilityFunctions.class);
@@ -503,9 +501,8 @@ public class UtilityFunctions extends PageObject {
      * Verifies if the latest response contains a particular string in the response body
      *
      * @param expectedMessage
-     * @param responses
      */
-    public static void messageValidation(String expectedMessage, Response... responses) {
+    public static void messageValidation(String expectedMessage) {
         Response res = responseList.get(activeIndex);
         String responseMessage = res.body().asPrettyString();
         if (responseMessage.contains(expectedMessage)) {
@@ -589,7 +586,7 @@ public class UtilityFunctions extends PageObject {
      * @param pathProvided
      * @param expectedValue
      */
-    public static void verifyValueInJsonArray(String pathProvided, String expectedValue, Response... responses) {
+    public static void verifyValueInJsonArray(String pathProvided, String expectedValue) {
         Response res = responseList.get(activeIndex);
         Object valueFoundAtPath = res.jsonPath().get(pathProvided);
         if (ObjectUtils.allNull(valueFoundAtPath)) {

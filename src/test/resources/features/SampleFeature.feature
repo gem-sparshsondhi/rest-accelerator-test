@@ -4,8 +4,8 @@ Feature: Sample Feature file to demonstrate how a rest suite would look when usi
   @singleRequestAndValidations
   Scenario: Single request with validations
     Given User creates a new request
-    And User sets base URI as "http://localhost:3000"
-    And User sets path as "/items"
+    And User sets "http://localhost:3000" as base URI
+    And User sets "/items" as path
     And User sets Content-Type as "application/json"
     And User sets relaxed HTTPS validation
     And User sets url encoding to "false"
@@ -30,8 +30,8 @@ Feature: Sample Feature file to demonstrate how a rest suite would look when usi
   @MultiRequestAlternateValidations
   Scenario: Multiple requests with alternating validations
     Given User creates a new request
-    And User sets base URI as "http://localhost:3000"
-    And User sets path as "/items"
+    And User sets "http://localhost:3000" as base URI
+    And User sets "/items" as path
     And User sets Content-Type as "application/json"
     And User sets relaxed HTTPS validation
     And User sets url encoding to "false"
@@ -53,8 +53,8 @@ Feature: Sample Feature file to demonstrate how a rest suite would look when usi
     And User verifies value "600" is found in Json array response for "prices" key in latest response
     And User verifies value "600" is found in Json array response for key with Json Path "custom.value1.value2.prices" in latest response
     Then User creates a new request
-    And User sets base URI as "http://localhost:3000"
-    And User sets path as "/items"
+    And User sets "http://localhost:3000" as base URI
+    And User sets "/items" as path
     And User sets Content-Type as "application/json"
     And User sets relaxed HTTPS validation
     And User sets url encoding to "false"
@@ -79,8 +79,8 @@ Feature: Sample Feature file to demonstrate how a rest suite would look when usi
   @MultiRequestDetachedValidations
   Scenario: Multiple requests with validations on both done after the requests were made
     Given User creates a new request
-    And User sets base URI as "http://localhost:3000"
-    And User sets path as "/items"
+    And User sets "http://localhost:3000" as base URI
+    And User sets "/items" as path
     And User sets Content-Type as "application/json"
     And User sets relaxed HTTPS validation
     And User sets url encoding to "false"
@@ -89,8 +89,8 @@ Feature: Sample Feature file to demonstrate how a rest suite would look when usi
       | header1 | value1 |
     Then User makes a "get" request
     When User creates a new request
-    And User sets base URI as "http://localhost:3000"
-    And User sets path as "/items"
+    And User sets "http://localhost:3000" as base URI
+    And User sets "/items" as path
     And User sets Content-Type as "application/json"
     And User sets relaxed HTTPS validation
     And User sets url encoding to "false"
@@ -128,8 +128,8 @@ Feature: Sample Feature file to demonstrate how a rest suite would look when usi
   @MultiRequestSingleValidations
   Scenario: Multiple requests with second only validation
     Given User creates a new request
-    And User sets base URI as "http://localhost:3000"
-    And User sets path as "/items"
+    And User sets "http://localhost:3000" as base URI
+    And User sets "/items" as path
     And User sets Content-Type as "application/json"
     And User sets relaxed HTTPS validation
     And User sets url encoding to "false"
@@ -138,8 +138,8 @@ Feature: Sample Feature file to demonstrate how a rest suite would look when usi
       | header1 | value1 |
     Then User makes a "get" request
     Then User creates a new request
-    And User sets base URI as "http://localhost:3000"
-    And User sets path as "/items"
+    And User sets "http://localhost:3000" as base URI
+    And User sets "/items" as path
     And User sets Content-Type as "application/json"
     And User sets relaxed HTTPS validation
     And User sets url encoding to "false"
@@ -164,8 +164,8 @@ Feature: Sample Feature file to demonstrate how a rest suite would look when usi
   @MultiRequestDetachedValidationsInverted
   Scenario: Multiple requests with validations on both done after the requests were made
     Given User creates a new request
-    And User sets base URI as "http://localhost:3000"
-    And User sets path as "/items"
+    And User sets "http://localhost:3000" as base URI
+    And User sets "/items" as path
     And User sets Content-Type as "application/json"
     And User sets relaxed HTTPS validation
     And User sets url encoding to "false"
@@ -174,8 +174,8 @@ Feature: Sample Feature file to demonstrate how a rest suite would look when usi
       | header1 | value1 |
     Then User makes a "get" request
     When User creates a new request
-    And User sets base URI as "http://localhost:3000"
-    And User sets path as "/items"
+    And User sets "http://localhost:3000" as base URI
+    And User sets "/items" as path
     And User sets Content-Type as "application/json"
     And User sets relaxed HTTPS validation
     And User sets url encoding to "false"
