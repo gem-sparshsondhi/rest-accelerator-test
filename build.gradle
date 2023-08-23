@@ -1,10 +1,10 @@
-defaultTasks 'clean', 'test', 'aggregate'
+defaultTasks 'clean', 'build', 'test', 'aggregate', 'reports'
 
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'net.serenity-bdd.aggregator'
 
-group 'org.orangehrmdemo'                       //set according to your group name
+group 'org.rest-accelerator'                       //set according to your group name
 version '1.0-SNAPSHOT'
 
 repositories {
@@ -23,37 +23,22 @@ buildscript {
         classpath('net.serenity-bdd:serenity-single-page-report:' + serenityVersion)
     }
 }
-
-sourceCompatibility = 11                        //add according to your project SDK
-targetCompatibility = 11                        //add according to your project SDK
-
 ext {
-    slf4jVersion = '2.0.5'
     serenityCoreVersion = '3.6.12'
-    junitVersion = '4.13.2'
-    assertJVersion = '3.24.2'
-    logbackVersion = '1.2.3'
-    restAssuredVersion = '5.3.0'
     jsonVersion = '20230227'
+    slf4jVersion = '2.0.5'
 }
 
 dependencies {
     testImplementation "net.serenity-bdd:serenity-core:${serenityCoreVersion}",
             "net.serenity-bdd:serenity-junit:${serenityCoreVersion}",
-            "net.serenity-bdd:serenity-screenplay:${serenityCoreVersion}",
-            "net.serenity-bdd:serenity-screenplay-rest:${serenityCoreVersion}",
             "net.serenity-bdd:serenity-rest-assured:${serenityCoreVersion}",
-            "io.rest-assured:rest-assured:${restAssuredVersion}",
-            "org.json:json:${jsonVersion}",
-            "junit:junit:${junitVersion}",
-            "org.assertj:assertj-core:${assertJVersion}",
-            "org.slf4j:slf4j-simple:${slf4jVersion}",
             "net.serenity-bdd:serenity-cucumber:${serenityCoreVersion}",
+            "org.json:json:${jsonVersion}",
+            "org.slf4j:slf4j-simple:${slf4jVersion}",
             'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.14.2',
-            "commons-io:commons-io:2.11.0",
             'io.rest-assured:json-schema-validator:5.3.0',
-            'com.jayway.jsonpath:json-path:2.7.0',
-            'org.skyscreamer:jsonassert:1.5.1'
+            'com.jayway.jsonpath:json-path:2.7.0'
 }
 
 serenity {
@@ -61,7 +46,7 @@ serenity {
 }
 test {
     filter {
-        includeTestsMatching "*.RestAssuredRunner"
+        includeTestsMatching "*.TestRunner"
     }
     testLogging.showStandardStreams = true
     systemProperties System.getProperties()
@@ -69,5 +54,3 @@ test {
 
 
 gradle.startParameter.continueOnFailure = true
-
-test.finalizedBy(aggregate)
