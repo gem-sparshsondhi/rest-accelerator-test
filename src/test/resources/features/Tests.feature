@@ -7,7 +7,7 @@ Feature: Sample Feature file to demonstrate how a rest suite would look when usi
     When user adds Bearer Auth with clientID and clientSecret
 
   @Requests
-    Scenario:
+  Scenario:
     #single request
     Given user creates a new request named "requestOne" request and sets "custom" as endpoint
     When user sets Content-Type as "application/json"
@@ -17,16 +17,20 @@ Feature: Sample Feature file to demonstrate how a rest suite would look when usi
       | Header Name | Header Value |
       | header1     | value1       |
       | header2     | value2       |
+    When user adds Query Param as map to the request
     When user adds Query Params to the request
       | Parameter Key | Parameter Value |
       | Key1          | Val1            |
+    When user adds Form Param as map to the request
     When user adds form parameters
       | Parameter Key | Parameter Key |
       | key           | val           |
     When user adds path parameters
       | Parameter Key | Parameter Key |
       | key           | val           |
-    When user add Headers
+    When user adds Path Param as map to the request
+    When user add headers as map to the request
+    When user add headers name "header1" and header value "value1" to the request
     When user add Query Params
     When user add Form Params
     When user add Path Params
@@ -38,9 +42,14 @@ Feature: Sample Feature file to demonstrate how a rest suite would look when usi
     When user sets Content-Type as "application/json" for "requestTwo" request
     When user sets relaxed HTTPS validation for "requestTwo" request
     When user sets url encoding to "false" for "requestTwo" request
+    When user adds header name "header1" and header value "value1" for "requestTwo" request
+    When user add headers as map for "requestTwo" request
     When user adds headers to "requestTwo" request
       | Header Name | Header Value |
       | header1     | value1       |
+    When user add Query Param as map for "requestTwo" request
+    When user add Path Param as map for "requestTwo" request
+    When user add Form Param as map for "requestTwo" request
     When user add form parameters to "PostData" request
       | Parameter Key | Parameter Key |
       | key           | val           |
@@ -113,3 +122,7 @@ Feature: Sample Feature file to demonstrate how a rest suite would look when usi
     When user deletes "DeleteData" response
     When user clears all requests
     When user clears all responses
+
+
+    #Json Comparison
+    When user perform Json comparison

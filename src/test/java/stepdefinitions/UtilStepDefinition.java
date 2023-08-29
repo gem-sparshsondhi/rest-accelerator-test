@@ -9,7 +9,7 @@ import io.cucumber.java.en.When;
 import net.serenitybdd.core.environment.EnvironmentSpecificConfiguration;
 import net.thucydides.core.environment.SystemEnvironmentVariables;
 
-import javax.xml.crypto.Data;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,6 +29,16 @@ public class UtilStepDefinition extends CommonFunctions {
         userHitsRequest(method, requestKey);
     }
 
+    @Then("^user verifies \"(.*)\" status code$")
+    public void userVerifiesStatusCode(int statusCode) {
+        verifyStatusCode(statusCode);
+    }
+
+    @Then("^user verifies response code as \"(.*)\" for \"(.*)\" response$")
+    public void userVerifiesStatusCode(int statusCode, String responseKey) {
+        verifyStatusCode(statusCode, responseKey);
+    }
+
     @Then("^user adds headers to the request$")
     public void addHeadersToRequest(DataTable dataTable) {
         addHeaders(dataTable);
@@ -39,14 +49,92 @@ public class UtilStepDefinition extends CommonFunctions {
         addHeaders(requestKey, dt);
     }
 
-    @Then("^user verifies \"(.*)\" status code$")
-    public void userVerifiesStatusCode(int statusCode) {
-        verifyStatusCode(statusCode);
+    @When("^user add headers name \"(.*)\" and header value \"(.*)\" to the request$")
+    public void userPassHeadersAsString(String headerName, String headerValue) {
+        addHeaders(headerName, headerValue);
     }
 
-    @Then("^user verifies response code as \"(.*)\" for \"(.*)\" response$")
-    public void userVerifiesStatusCode(int statusCode, String responseKey) {
-        verifyStatusCode(statusCode, responseKey);
+    @When("^user adds header name \"(.*)\" and header value \"(.*)\" for \"(.*)\" request$")
+    public void userPassHeadersAsString(String requestKey, String headerName, String headerValue) {
+        addHeaders(requestKey, headerName, headerValue);
+
+    }
+
+    @When("^user add headers as map to the request$")
+    public void userAddHeaders() {
+        // Multiple headers can also be added in the form of a HashMap
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Key1", "Value");
+        headers.put("Key2", "Value");
+        headers.put("Key3", "Value");
+        addHeadersViaMap(headers);  // Can be used to add the headers to the latest request
+        addHeadersViaMap("requestOne", headers);  // Can be used to add the headers to the specified request (Here "requestOne")
+
+
+    }
+
+    @When("^user add headers as map for \"(.*)\" request$")
+    public void userAddHeadersAsMapForRequest(String requestKey) {
+        // Multiple headers can also be added in the form of a HashMap
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Key1", "Value");
+        headers.put("Key2", "Value");
+        headers.put("Key3", "Value");
+        addHeadersViaMap(requestKey, headers);  // Can be used to add the headers to the specified request (Here "requestOne")
+    }
+
+    @When("^user add Query Param as map for \"(.*)\" request$")
+    public void userAddQueryParamAsMapForRequest(String requestKey) {
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("Key1", "Value");
+        queryParams.put("Key2", "Value");
+        queryParams.put("Key3", "Value");
+        addQueryParamsViaMap(requestKey, queryParams);
+    }
+
+    @When("^user adds Query Param as map to the request$")
+    public void userAddsQueryParamAsMapToTheRequest() {
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("Key1", "Value");
+        queryParams.put("Key2", "Value");
+        queryParams.put("Key3", "Value");
+        addQueryParamsViaMap(queryParams);
+    }
+
+    @When("^user add Path Param as map for \"(.*)\" request$")
+    public void userAddPathParamAsMapForRequest(String requestKey) {
+        Map<String, String> pathParams = new HashMap<>();
+        pathParams.put("Key1", "Value");
+        pathParams.put("Key2", "Value");
+        pathParams.put("Key3", "Value");
+        addPathParamsViaMap(requestKey, pathParams);
+    }
+
+    @When("^user adds Path Param as map to the request$")
+    public void userAddsPathParamAsMapToTheRequest() {
+        Map<String, String> pathParams = new HashMap<>();
+        pathParams.put("Key1", "Value");
+        pathParams.put("Key2", "Value");
+        pathParams.put("Key3", "Value");
+        addPathParamsViaMap(pathParams);
+    }
+
+    @When("^user add Form Param as map for \"(.*)\" request$")
+    public void userAddFormParamAsMapForRequest(String requestKey) {
+        Map<String, String> formParams = new HashMap<>();
+        formParams.put("Key1", "Value");
+        formParams.put("Key2", "Value");
+        formParams.put("Key3", "Value");
+        addFormParamsViaMap(requestKey, formParams);
+    }
+
+    @When("^user adds Form Param as map to the request$")
+    public void userAddsFormParamAsMapToTheRequest() {
+        Map<String, String> formParams = new HashMap<>();
+        formParams.put("Key1", "Value");
+        formParams.put("Key2", "Value");
+        formParams.put("Key3", "Value");
+        addFormParamsViaMap(formParams);
     }
 
     @And("^user add Query Params to \"(.*)\" request$")
@@ -212,7 +300,7 @@ public class UtilStepDefinition extends CommonFunctions {
 
     @Then("^user adds extracted value of key \"(.*)\" in \"(.*)\" request body$")
     public void userAddsExtractedKeyInBody(String extractedKey, String methodBody) {
-        userAddsExtractedValueFromResponseToARequest(extractedKey, methodBody);
+        addExtractedValueFromResponseToARequest(extractedKey, methodBody);
     }
 
     @Then("^user verifies state of key-value in response body$")
@@ -250,17 +338,6 @@ public class UtilStepDefinition extends CommonFunctions {
         addPathParams(requestKey, dataTable);
     }
 
-    @When("^user add Headers$")
-    public void userAddHeaders() {
-        // Multiple headers can also be added in the form of a HashMap
-        Map<String, String> headers = new HashMap<>();
-        headers.put("Key1", "Value");
-        headers.put("Key2", "Value");
-        headers.put("Key3", "Value");
-        addHeadersViaMap(headers);  // Can be used to add the headers to the latest request
-        addHeadersViaMap("requestOne", headers);  // Can be used to add the headers to the specified request (Here "requestOne")
-    }
-
     @When("^user add Query Params$")
     public void userAddQueryParams() {
         addQueryParams("Key", "Value");
@@ -285,4 +362,12 @@ public class UtilStepDefinition extends CommonFunctions {
         authToken = EnvironmentSpecificConfiguration.from(SystemEnvironmentVariables.createEnvironmentVariables()).getProperty("accessToken");
         return authToken;
     }
+
+    @When("^user perform Json comparison$")
+    public void performJsonComparison() throws IOException {
+        performComparison();
+
+    }
+
+
 }

@@ -49,13 +49,13 @@ public class Test extends CommonFunctions {
 
     @When("user adds extracted key-value in request body")
     public void userAddsExtractedKeyValueInRequestBody() {
-        userAddsExtractedValueFromResponseToARequest("data.email", "POSTReqBody");
+        addExtractedValueFromResponseToARequest("data.email", "POSTReqBody");
     }
 
     @Given("user creates a request with body")
     public void userCreatesARequestWithBody() {
         userCreatesRequest("PostData", "create");
-        addHeaders("PostData", "Accept", "*/*");
+                addHeaders("PostData", "Accept", "*/*");
         userAddsBody("POSTReqBody","PostData");
     }
 

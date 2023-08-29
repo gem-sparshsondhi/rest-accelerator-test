@@ -88,16 +88,10 @@ public class CommonFunctions {
      */
     public void userHitsRequest(String requestType) {
         requestType = requestType.toUpperCase();
-        switch (requestType.toUpperCase()) {
-            case "GET":
-            case "DELETE":
-            case "POST":
-            case "PUT":
-            case "PATCH":
-                response = reqSpecMap.get(latestResponse).log().all().when().request(requestType);
-                break;
-            default:
-                logger.info("Unsupported method: " + requestType);
+        try {
+            response = reqSpecMap.get(latestResponse).log().all().when().request(requestType);
+        } catch (Exception e) {
+            logger.info("Unsupported method: " + requestType);
         }
         logger.info("Response Body: \n\n" + response.getBody().asPrettyString());
         responseMap.put(latestResponse, response);
@@ -121,10 +115,21 @@ public class CommonFunctions {
         responseMap.put(requestKey, response);
     }
 
+    /**
+     * Function to add method body to request created
+     *
+     * @param methodBody Key of the method body under which request body is stored in data.json file
+     */
     public void userAddsBody(String methodBody) {
         reqSpecMap.get(latestResponse).log().all().when().body(jsonBody(methodBody, environment));
     }
 
+    /**
+     * Function to add method body to request created
+     *
+     * @param methodBody Key of the method body under which request body is stored in data.json file
+     * @param requestKey Key name of the request associated with this response
+     */
     public void userAddsBody(String methodBody, String requestKey) {
         if (!reqSpecMap.containsKey(requestKey)) {
             logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
@@ -182,10 +187,24 @@ public class CommonFunctions {
         logger.info("Status code verified");
     }
 
+    /**
+     * Set header to latest request specification via String key and value
+     *
+     * @param headerName  Header Name
+     * @param headerValue Header Value
+     */
+
     public static void addHeaders(String headerName, String headerValue) {
         reqSpecMap.get(latestResponse).header(headerName, headerValue);
     }
 
+    /**
+     * Set header to latest request specification via String key and value
+     *
+     * @param headerName  Header Name
+     * @param headerValue Header Value
+     * @param requestKey  Key name of the request associated with this response
+     */
     public static void addHeaders(String requestKey, String headerName, String headerValue) {
         if (!reqSpecMap.containsKey(requestKey)) {
             logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
@@ -194,9 +213,22 @@ public class CommonFunctions {
         reqSpecMap.get(requestKey).header(headerName, headerValue);
     }
 
+    /**
+     * Set header to latest request specification via String key and value
+     *
+     * @param headers Headers as a Map of header key and header value
+     */
+
     public static void addHeadersViaMap(Map<String, String> headers) {
         reqSpecMap.get(latestResponse).headers(headers);
     }
+
+    /**
+     * Set header to latest request specification via String key and value
+     *
+     * @param headers    Headers as a Map of header key and header value
+     * @param requestKey Key name of the request associated with this response
+     */
 
     public static void addHeadersViaMap(String requestKey, Map<String, String> headers) {
         if (!reqSpecMap.containsKey(requestKey)) {
@@ -207,7 +239,7 @@ public class CommonFunctions {
     }
 
     /**
-     * Sets a Header to the latest RequestSpecification
+     * Sets a Header to the latest RequestSpecification via DataTable
      *
      * @param dt DataTable of Header Name and Header Value
      */
@@ -217,7 +249,6 @@ public class CommonFunctions {
             reqSpecMap.get(latestResponse).header(header.get("Header Name"), header.get("Header Value"));
         }
     }
-
 
     /**
      * Sets a Header to the latest RequestSpecification
@@ -265,6 +296,14 @@ public class CommonFunctions {
         }
     }
 
+    /**
+     * Set queryParams to latest request specification via String key and value
+     *
+     * @param parameterKey   Query Param Name
+     * @param parameterValue Query Param Value
+     * @param requestKey     Key name of the request associated with this response
+     */
+
     public static void addQueryParams(String requestKey, String parameterKey, String parameterValue) {
         if (!reqSpecMap.containsKey(requestKey)) {
             logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
@@ -274,10 +313,39 @@ public class CommonFunctions {
         reqSpecMap.get(requestKey).queryParam(parameterKey, parameterValue);
     }
 
+    /**
+     * Set queryParams to latest request specification via String key and value
+     *
+     * @param parameterKey   Header Name
+     * @param parameterValue Header Value
+     */
+
     public static void addQueryParams(String parameterKey, String parameterValue) {
         reqSpecMap.get(latestResponse).queryParam(parameterKey, parameterValue);
     }
 
+    /**
+     * Set queryParams to latest request specification via Map
+     *
+     * @param queryParam Query Params as a Map of param key and param value
+     */
+    public static void addQueryParamsViaMap(Map<String, String> queryParam) {
+        reqSpecMap.get(latestResponse).queryParams(queryParam);
+    }
+
+    /**
+     * Set queryParams to latest request specification via Map
+     *
+     * @param queryParam Query Params as a Map of param key and param value
+     * @param requestKey Key name of the request associated with this response
+     */
+    public static void addQueryParamsViaMap(String requestKey, Map<String, String> queryParam) {
+        if (!reqSpecMap.containsKey(requestKey)) {
+            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+        }
+        reqSpecMap.get(requestKey).queryParams(queryParam);
+    }
 
     /**
      * Sets a Form Params to the latest RequestSpecification
@@ -308,6 +376,13 @@ public class CommonFunctions {
         }
     }
 
+    /**
+     * Set FormParams to latest request specification via String key and value
+     *
+     * @param parameterKey   Form Param Name
+     * @param parameterValue Form Param Value
+     * @param requestKey     Key name of the request associated with this response
+     */
     public static void addFormParams(String requestKey, String parameterKey, String parameterValue) {
         if (!reqSpecMap.containsKey(requestKey)) {
             logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
@@ -317,11 +392,47 @@ public class CommonFunctions {
         reqSpecMap.get(requestKey).formParam(parameterKey, parameterValue);
     }
 
-
+    /**
+     * Set FormParams to latest request specification via String key and value
+     *
+     * @param parameterKey   Form Param Name
+     * @param parameterValue Form Param Value
+     */
     public static void addFormParams(String parameterKey, String parameterValue) {
         reqSpecMap.get(latestResponse).queryParam(parameterKey, parameterValue);
     }
 
+    /**
+     * Set Form Params to latest request specification via Map
+     *
+     * @param formParams Form Params as a Map of param key and param value
+     */
+    public static void addFormParamsViaMap(Map<String, String> formParams) {
+
+        reqSpecMap.get(latestResponse).formParams(formParams);
+    }
+
+    /**
+     * Set Form Params to latest request specification via Map
+     *
+     * @param formParams Form Params as a Map of param key and param value
+     * @param requestKey Key name of the request associated with this response
+     */
+    public static void addFormParamsViaMap(String requestKey, Map<String, String> formParams) {
+        if (!reqSpecMap.containsKey(requestKey)) {
+            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+        }
+        reqSpecMap.get(requestKey).formParams(formParams);
+    }
+
+
+    /**
+     * Sets a Path Params to the latest RequestSpecification
+     *
+     * @param dt         DataTable of Parameter Key and Value
+     * @param requestKey Key name of the request associated with this response
+     */
     public static void addPathParams(String requestKey, DataTable dt) {
         if (!reqSpecMap.containsKey(requestKey)) {
             logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
@@ -333,12 +444,26 @@ public class CommonFunctions {
         }
     }
 
+    /**
+     * Sets a Path Params to the latest RequestSpecification
+     *
+     * @param dt DataTable of Parameter Key and Value
+     */
+
     public static void addPathParams(DataTable dt) {
         List<Map<String, String>> pathParams = dt.asMaps();
         for (Map<String, String> params : pathParams) {
             reqSpecMap.get(latestResponse).pathParam(params.get("Parameter Key"), params.get("Parameter Value"));
         }
     }
+
+    /**
+     * Set PathParams to latest request specification via String key and value
+     *
+     * @param parameterKey   Path Param Name
+     * @param parameterValue Path Param Value
+     * @param requestKey     Key name of the request associated with this response
+     */
 
     public static void addPathParams(String requestKey, String parameterKey, String parameterValue) {
         if (!reqSpecMap.containsKey(requestKey)) {
@@ -348,11 +473,43 @@ public class CommonFunctions {
         reqSpecMap.get(requestKey).pathParam(parameterKey, parameterValue);
     }
 
-
+    /**
+     * Set PathParams to latest request specification via String key and value
+     *
+     * @param parameterKey   Path Param Name
+     * @param parameterValue Path Param Value
+     */
     public static void addPathParams(String parameterKey, String parameterValue) {
 
         reqSpecMap.get(latestResponse).pathParam(parameterKey, parameterValue);
     }
+
+
+    /**
+     * Set Path Params to latest request specification via Map
+     *
+     * @param pathParams Path Params as a Map of param key and param value
+     */
+    public static void addPathParamsViaMap(Map<String, String> pathParams) {
+
+        reqSpecMap.get(latestResponse).pathParams(pathParams);
+    }
+
+    /**
+     * Set Path Params to latest request specification via Map
+     *
+     * @param pathParams Path Params as a Map of param key and param value
+     * @param requestKey Key name of the request associated with this response
+     */
+
+    public static void addPathParamsViaMap(String requestKey, Map<String, String> pathParams) {
+        if (!reqSpecMap.containsKey(requestKey)) {
+            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+        }
+        reqSpecMap.get(requestKey).pathParams(pathParams);
+    }
+
 
     /**
      * Return value of key from response
@@ -364,7 +521,14 @@ public class CommonFunctions {
         extractedValue.put(key, response.jsonPath().getString(key));
     }
 
-    public void userAddsExtractedValueFromResponseToARequest(String keyToAdd, String methodBody) {
+    /**
+     * Adds the extracted key value from another response body to the request body of another request
+     *
+     * @param keyToAdd   Key which needs to be added in method body
+     * @param methodBody Method body in which key needs to be added
+     */
+
+    public void addExtractedValueFromResponseToARequest(String keyToAdd, String methodBody) {
         reqSpecMap.get(latestResponse).log().all().when().body(jsonBody(methodBody, environment, keyToAdd));
     }
 
@@ -490,7 +654,6 @@ public class CommonFunctions {
             logger.error("Invalid time format. Please recheck.");
             Assert.fail("Invalid time format. Please recheck.");
         }
-
 
     }
 
@@ -1116,7 +1279,6 @@ public class CommonFunctions {
         requestSpecification.headers("Authorization", "Bearer " + token);
     }
 
-
     /**
      * Clears the Request Specification Hashmap
      * A new hashmap gets initialized to reqSpecMap
@@ -1151,23 +1313,127 @@ public class CommonFunctions {
         responseMap.remove(key);
     }
 
-    // Comparator Code
-    public static HashSet<String> compareJsonArray(JSONArray expected, JSONArray result) {
-        mismatchComments = new HashSet<>();
-        mismatchedFinal = new HashMap<>();
-        mismatchInJson1Keys = new ArrayList<>();
-        mismatchInJson2Keys = new ArrayList<>();
-        mismatchInJson1Values = new HashSet<>();
-        mismatchInJson2Values = new HashSet<>();
-        List<Object> expArray = toList(expected);
-        List<Object> resArray = toList(result);
-        compareArrayList((ArrayList<Object>) expArray, (ArrayList<Object>) resArray);
+    //------------------------------------------ Comparator Code -----------------------------------------------
 
-        //returns the HashSet containing all the differences.
-        return returnResult();
+    /**
+     * Json Comparison is performed based on the type of Json
+     */
+
+    public void performComparison() throws IOException {
+        if (typeJSON().equalsIgnoreCase("object")) {
+            JSONObject expected = getExpectedJsonObject();
+            JSONObject observed = getResultJsonObject();
+            //compares two JSON objects and returns the HashSet containing all the differences
+            HashSet<String> jsonDiff = compareJsonObject(expected, observed);
+            //passes the HashSet containing differences to update the automation report.
+            updateReport(jsonDiff);
+        } else if (typeJSON().equalsIgnoreCase("array")) {
+            JSONArray expected = getExpectedJSONArray();
+            JSONArray observed = getResultJSONArray();
+            //compares two JSON Arrays and returns the HashSet containing all the differences
+            HashSet<String> jsonDiff = compareJsonArray(expected, observed);
+            updateReport(jsonDiff);
+        }
     }
 
-    //main function for comparing JSON Objects
+    /**
+     * Functions to determine the type of JSONs, read them from file and return them as JSON Objects
+     * or JSON Arrays for further comparison between them.
+     *
+     * @return type Of Json
+     */
+    public static String typeJSON() throws IOException {
+        FileReader reader = new FileReader("src/test/resources/serenity.properties");
+        Properties p = new Properties();
+        p.load(reader);
+
+        expectedJson = "";
+        res = "";
+        String type = null;
+        String path = System.getProperty("user.dir");
+        File jsonFile = new File(path + p.getProperty("filePath1"));
+        File resFile = new File(path + p.getProperty("filePath2"));
+
+        try (Scanner sc = new Scanner(jsonFile)) {
+            while (sc.hasNextLine()) {
+                expectedJson = expectedJson + sc.nextLine();
+            }
+        }
+        try (Scanner sc = new Scanner(resFile)) {
+            while (sc.hasNextLine()) {
+                res = res + sc.nextLine();
+            }
+        }
+
+        Object expJson = new JSONTokener(expectedJson).nextValue();
+        Object respJson = new JSONTokener(res).nextValue();
+
+        if (expJson instanceof JSONObject && respJson instanceof JSONObject) {
+            type = "object";
+        } else if (expJson instanceof JSONArray && respJson instanceof JSONArray) {
+            type = "array";
+        } else {
+            Assert.assertFalse("Both JSONs are not of same type", true);
+        }
+
+        return type;
+    }
+
+    /**
+     * Function to read expected JSON Object from the file
+     *
+     * @return JsonObject
+     */
+
+    public static JSONObject getExpectedJsonObject() {
+
+        //converting expected json string to a json object
+        JSONObject obj = new JSONObject(expectedJson);
+        return obj;
+    }
+
+    /**
+     * Function to read observed JSON Object from the file
+     *
+     * @return Json Object
+     */
+
+    public static JSONObject getResultJsonObject() {
+        //response string to json object
+        JSONObject obj2 = new JSONObject(res);
+        return obj2;
+    }
+
+    /**
+     * Function to read expected JSON Array from the file
+     *
+     * @return :Json Array
+     */
+
+    public static JSONArray getExpectedJSONArray() {
+        JSONArray obj = new JSONArray(expectedJson);
+        return obj;
+    }
+
+    /**
+     * Function to read observed JSON Array from the file
+     *
+     * @return :Json Array
+     */
+
+    public static JSONArray getResultJSONArray() {
+        JSONArray obj = new JSONArray(res);
+        return obj;
+    }
+
+    /**
+     * Function for comparing JSON Objects
+     *
+     * @param expected Expected Json Object
+     * @param result   Actual Json Object
+     * @return HashSet of Values after Comparison
+     */
+
     public static HashSet<String> compareJsonObject(JSONObject expected, JSONObject result) {
         mismatchComments = new HashSet<>();
         mismatchedFinal = new HashMap<>();
@@ -1191,7 +1457,34 @@ public class CommonFunctions {
 
     }
 
-    //updates the serenity report with the differences (if any) passed as parameter.
+    /**
+     * Function for comparing JSON Array
+     *
+     * @param expected Expected Json Array
+     * @param result   Actual Json Array
+     * @return HashSet of Values after Comparison
+     */
+    public static HashSet<String> compareJsonArray(JSONArray expected, JSONArray result) {
+        mismatchComments = new HashSet<>();
+        mismatchedFinal = new HashMap<>();
+        mismatchInJson1Keys = new ArrayList<>();
+        mismatchInJson2Keys = new ArrayList<>();
+        mismatchInJson1Values = new HashSet<>();
+        mismatchInJson2Values = new HashSet<>();
+        List<Object> expArray = toList(expected);
+        List<Object> resArray = toList(result);
+        compareArrayList((ArrayList<Object>) expArray, (ArrayList<Object>) resArray);
+
+        //returns the HashSet containing all the differences.
+        return returnResult();
+    }
+
+    /**
+     * Function to update the serenity report with the differences (if any) passed as parameter.
+     *
+     * @param result Hashset of result of Json Differences
+     */
+
     public static void updateReport(HashSet<String> result) {
         if (result.size() != 0) {
             System.out.println("Differences found in Expected JSON and Observed JSON !!");
@@ -1202,8 +1495,11 @@ public class CommonFunctions {
         }
     }
 
-
-    //utility to get type of value for a better mismatch
+    /**
+     * Function to get type of value for a better mismatch
+     *
+     * @param data Type of Data
+     */
     public static String getType(Object data) {
         String type = data.getClass().toString();
         if (type.contains("HashMap"))
@@ -1222,7 +1518,9 @@ public class CommonFunctions {
             return "invalid";
     }
 
-    //compiling the differences into a single HashSet and returning it
+    /**
+     * Function for compiling the differences into a single HashSet and returning it
+     */
     public static HashSet<String> returnResult() {
         finalResult = new HashSet<>();
 
@@ -1242,40 +1540,46 @@ public class CommonFunctions {
         return finalResult;
     }
 
-    //compares the ArrayLists
-    public static void compareArrayList(ArrayList<Object> comparisionList, ArrayList<Object> ListToCompare) {
+    /**
+     * Function to compare the ArrayLists
+     *
+     * @param listToCompare  List which needs to be compared
+     * @param comparisonList List from which other list are compared
+     */
+
+    public static void compareArrayList(ArrayList<Object> comparisonList, ArrayList<Object> listToCompare) {
         int i = 0;
         int j = 0;
-        if (comparisionList.size() == ListToCompare.size()) {
-            for (Object listObj : ListToCompare) {
+        if (comparisonList.size() == listToCompare.size()) {
+            for (Object listObj : listToCompare) {
                 if (listObj instanceof HashMap) {
-                    if (comparisionList.get(i) instanceof HashMap) {
-                        matchKeys((Map<String, Object>) listObj, (Map<String, Object>) comparisionList.get(i));
-                        matchValues((Map<String, Object>) listObj, (Map<String, Object>) comparisionList.get(i));
+                    if (comparisonList.get(i) instanceof HashMap) {
+                        matchKeys((Map<String, Object>) listObj, (Map<String, Object>) comparisonList.get(i));
+                        matchValues((Map<String, Object>) listObj, (Map<String, Object>) comparisonList.get(i));
                     } else {
-                        String comm = "Type Mismatch for <" + i + "> index in the list. Expected: <" + getType(comparisionList.get(i)) + "> type value | Observed: <" + getType(listObj) + "> type value";
+                        String comm = "Type Mismatch for <" + i + "> index in the list. Expected: <" + getType(comparisonList.get(i)) + "> type value | Observed: <" + getType(listObj) + "> type value";
                         mismatchComments.add(comm);
                     }
                 } else if (listObj instanceof ArrayList) {
-                    if (comparisionList.get(i) instanceof ArrayList) {
+                    if (comparisonList.get(i) instanceof ArrayList) {
 
-                        compareArrayList((ArrayList<Object>) comparisionList.get(i), (ArrayList<Object>) listObj);
+                        compareArrayList((ArrayList<Object>) comparisonList.get(i), (ArrayList<Object>) listObj);
 
                     } else {
-                        String comm = "Type Mismatch for <" + i + "> index in the list. Expected: <" + getType(comparisionList.get(i)) + "> type value | Observed: <" + getType(listObj) + "> type value";
+                        String comm = "Type Mismatch for <" + i + "> index in the list. Expected: <" + getType(comparisonList.get(i)) + "> type value | Observed: <" + getType(listObj) + "> type value";
                         mismatchComments.add(comm);
                     }
                 }
                 //normal Arraylist values
                 else {
                     //Arraylist values mismatch
-                    if (!listObj.equals(comparisionList.get(i))) {
+                    if (!listObj.equals(comparisonList.get(i))) {
                         String listObjType = getType(listObj);
-                        String compListType = getType(comparisionList.get(i));
+                        String compListType = getType(comparisonList.get(i));
 
                         //if the type is same then values differ
                         if (listObjType.equalsIgnoreCase(compListType)) {
-                            String comm = "Value Mismatch for <" + i + "> index in the list. Expected: <" + comparisionList.get(i) + "> | Observed: <" + listObj + ">";
+                            String comm = "Value Mismatch for <" + i + "> index in the list. Expected: <" + comparisonList.get(i) + "> | Observed: <" + listObj + ">";
                             mismatchComments.add(comm);
                         } else {
                             String comm = "Type Mismatch for <" + i + "> index in the list. Expected: <" + compListType + "> type value | Observed: <" + listObjType + "> type value";
@@ -1292,12 +1596,12 @@ public class CommonFunctions {
                 i++;
             }
         } else {
-            while (i < ListToCompare.size() && j < comparisionList.size()) {
-                if (!comparisionList.get(i).equals(ListToCompare.get(i))) {
-                    String listObjType = getType(ListToCompare.get(i));
-                    String compListType = getType(comparisionList.get(i));
+            while (i < listToCompare.size() && j < comparisonList.size()) {
+                if (!comparisonList.get(i).equals(listToCompare.get(i))) {
+                    String listObjType = getType(listToCompare.get(i));
+                    String compListType = getType(comparisonList.get(i));
                     if (listObjType.equalsIgnoreCase(compListType)) {
-                        String comm = "Value Mismatch for <" + i + "> index in the list. Expected: <" + comparisionList.get(i) + "> | Observed: <" + ListToCompare.get(i) + ">";
+                        String comm = "Value Mismatch for <" + i + "> index in the list. Expected: <" + comparisonList.get(i) + "> | Observed: <" + listToCompare.get(i) + ">";
                         mismatchComments.add(comm);
                     } else {
                         String comm = "Type Mismatch for <" + i + "> index in the list. Expected: <" + compListType + "> type value | Observed: <" + listObjType + "> type value";
@@ -1307,19 +1611,26 @@ public class CommonFunctions {
                 i++;
                 j++;
             }
-            while (i < comparisionList.size()) {
-                String comm = "Missing element <" + comparisionList.get(i) + "> at <" + i + "> index of list in observed JSON!";
+            while (i < comparisonList.size()) {
+                String comm = "Missing element <" + comparisonList.get(i) + "> at <" + i + "> index of list in observed JSON!";
                 mismatchComments.add(comm);
                 i++;
             }
-            while (j < ListToCompare.size()) {
-                String comm = "Missing element <" + ListToCompare.get(i) + "> at <" + i + "> index of list in expected JSON!";
+            while (j < listToCompare.size()) {
+                String comm = "Missing element <" + listToCompare.get(i) + "> at <" + i + "> index of list in expected JSON!";
                 mismatchComments.add(comm);
                 j++;
             }
         }
     }
 
+    /**
+     * Function to get value of key from Result Hashmap and expected hashmap and then compare it
+     *
+     * @param currKey     Key whose value needs to be compared
+     * @param expectedMap Hashmap of expected Json
+     * @param resultMap   Hashmap of result json
+     */
 
     public static void compareValue(String currKey, Map<String, Object> resultMap, Map<String, Object> expectedMap) {
         //get the values for current key from both maps
@@ -1373,13 +1684,20 @@ public class CommonFunctions {
 
     }
 
-    public static ArrayList<String> compareKeys(Map<String, Object> comparisionMap, Map<String, Object> mapToCompare) {
+    /**
+     * Function to compare keys of actual and expected Hashmap of json data and return Array list of Values
+     *
+     * @param comparisonMap Map from which actual map will be compared
+     * @param mapToCompare  Actual map that needs to be compared
+     */
+
+    public static ArrayList<String> compareKeys(Map<String, Object> comparisonMap, Map<String, Object> mapToCompare) {
         Iterator<String> mapKeys = mapToCompare.keySet().iterator();
         ArrayList<String> temp = new ArrayList<>();
         boolean flag = false;
         while (mapKeys.hasNext()) {
             String currKey = mapKeys.next();
-            if (!comparisionMap.containsKey(currKey)) {
+            if (!comparisonMap.containsKey(currKey)) {
                 flag = true;
                 temp.add(currKey);
             }
@@ -1388,6 +1706,14 @@ public class CommonFunctions {
             return temp;
         return null;
     }
+
+
+    /**
+     * Function to match keys of actual result map and expected map
+     *
+     * @param resultMap   Map from which keys will be matched with expected Map
+     * @param expectedMap Expected Map
+     */
 
     public static void matchKeys(Map<String, Object> resultMap, Map<String, Object> expectedMap) {
         //if the keySet in both maps are unequal go ahead to match their keys further
@@ -1413,6 +1739,13 @@ public class CommonFunctions {
 
     }
 
+    /**
+     * Function to match values of actual result map and expected map
+     *
+     * @param resultMap   - Actual map to be compared
+     * @param expectedMap – Expected map
+     */
+
     public static void matchValues(Map<String, Object> resultMap, Map<String, Object> expectedMap) {
         Iterator<String> expectedMapKeys = expectedMap.keySet().iterator();
         Iterator<String> resultMapKeys = resultMap.keySet().iterator();
@@ -1424,6 +1757,10 @@ public class CommonFunctions {
         matchJsonValues(resultMap, expectedMap, expectedMapKeys, resKey);
         matchJsonValues(resultMap, expectedMap, resultMapKeys, exKey);
     }
+
+    /**
+     * Function to match json Values
+     */
 
     public static void matchJsonValues(Map<String, Object> resultMap, Map<String, Object> expectedMap, Iterator<String> it, Object mismatchedKeys) {
         List<String> keysNotToMatch;
@@ -1449,16 +1786,21 @@ public class CommonFunctions {
         }
     }
 
-    public static Map<String, Object> toMap(JSONObject jsonobj) throws JSONException {
+    /**
+     * Function to convert Json Object to Map
+     *
+     * @param jsonObj JsonObject to be converted into Map
+     */
+    public static Map<String, Object> toMap(JSONObject jsonObj) throws JSONException {
         Map<String, Object> map = new HashMap<String, Object>();
 
         //iterating through the keys of passed json object
-        Iterator<String> keys = jsonobj.keys();
+        Iterator<String> keys = jsonObj.keys();
 
         while (keys.hasNext()) {
             String key = keys.next();
             //for each key getting the value object
-            Object value = jsonobj.get(key);
+            Object value = jsonObj.get(key);
             //if value is of jsonArray type convert to List
             if (value instanceof JSONArray) {
                 value = toList((JSONArray) value);
@@ -1472,11 +1814,16 @@ public class CommonFunctions {
         return map;
     }
 
-    public static List<Object> toList(JSONArray array) throws JSONException {
+    /**
+     * Function to convert Json Array to List
+     *
+     * @param jsonArray JsonArray to be converted into list
+     */
+    public static List<Object> toList(JSONArray jsonArray) throws JSONException {
         List<Object> list = new ArrayList<Object>();
         //for each value in the list
-        for (int i = 0; i < array.length(); i++) {
-            Object value = array.get(i);
+        for (int i = 0; i < jsonArray.length(); i++) {
+            Object value = jsonArray.get(i);
             //if it's an array convert to list
             if (value instanceof JSONArray) {
                 value = toList((JSONArray) value);
@@ -1489,76 +1836,10 @@ public class CommonFunctions {
             list.add(value);
         }
         return list;
+
     }
 
-    //utility functions to determine the type of JSONs, read them from file and return them as JSON Objects
-    //or JSON Arrays for further comparison between them
 
-    //determines the type of JSON being read from the files whether a JSON Object or a JSON Array
-    public static String typeJSON() throws IOException {
-        FileReader reader = new FileReader("src/test/resources/serenity.properties");
-        Properties p = new Properties();
-        p.load(reader);
-
-        expectedJson = "";
-        res = "";
-        String type = null;
-        String path = System.getProperty("user.dir");
-        File jsonFile = new File(path + p.getProperty("filePath1"));
-        File resFile = new File(path + p.getProperty("filePath2"));
-
-        try (Scanner sc = new Scanner(jsonFile)) {
-            while (sc.hasNextLine()) {
-                expectedJson = expectedJson + sc.nextLine();
-            }
-        }
-        try (Scanner sc = new Scanner(resFile)) {
-            while (sc.hasNextLine()) {
-                res = res + sc.nextLine();
-            }
-        }
-
-        Object exjson = new JSONTokener(expectedJson).nextValue();
-        Object resjson = new JSONTokener(res).nextValue();
-
-        if (exjson instanceof JSONObject && resjson instanceof JSONObject) {
-            type = "object";
-        } else if (exjson instanceof JSONArray && resjson instanceof JSONArray) {
-            type = "array";
-        } else {
-            Assert.assertFalse("Both JSONs are not of same type", true);
-        }
-
-        return type;
-    }
-
-    //reading expected JSON Object from the file
-
-    public static JSONObject getExpectedJson() throws FileNotFoundException {
-
-        //converting expected json string to a json object
-        JSONObject obj = new JSONObject(expectedJson);
-        return obj;
-    }
-
-    //reading observed JSON Object from the file
-    public static JSONObject getResultJson() {
-        //response string to json object
-        JSONObject obj2 = new JSONObject(res);
-        return obj2;
-    }
-
-    //reading expected JSON Array from the file
-    public static JSONArray getExpectedJSONArray() {
-        JSONArray obj = new JSONArray(expectedJson);
-        return obj;
-    }
-
-    //reading observed JSON Array from the file
-    public static JSONArray getResultJSONArray() {
-        JSONArray obj = new JSONArray(res);
-        return obj;
-    }
 }
 
 
