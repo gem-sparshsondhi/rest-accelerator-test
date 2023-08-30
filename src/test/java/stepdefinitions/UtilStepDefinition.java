@@ -6,6 +6,7 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import net.serenitybdd.core.annotations.events.BeforeScenario;
 import net.serenitybdd.core.environment.EnvironmentSpecificConfiguration;
 import net.thucydides.core.environment.SystemEnvironmentVariables;
 
@@ -14,6 +15,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class UtilStepDefinition extends CommonFunctions {
+    @BeforeScenario
+    public void initializeVariables() {
+        resetVariables();
+    }
+
     @Given("^user creates a new request named \"(.*)\" request and sets \"(.*)\" as endpoint$")
     public void createNewRequestAndSetEndpoint(String key, String endpoint) {
         userCreatesRequest(key, endpoint);
@@ -69,8 +75,6 @@ public class UtilStepDefinition extends CommonFunctions {
         headers.put("Key3", "Value");
         addHeadersViaMap(headers);  // Can be used to add the headers to the latest request
         addHeadersViaMap("requestOne", headers);  // Can be used to add the headers to the specified request (Here "requestOne")
-
-
     }
 
     @When("^user add headers as map for \"(.*)\" request$")
@@ -298,9 +302,9 @@ public class UtilStepDefinition extends CommonFunctions {
         extractValue(key);
     }
 
-    @Then("^user adds extracted value of key \"(.*)\" in \"(.*)\" request body$")
-    public void userAddsExtractedKeyInBody(String extractedKey, String methodBody) {
-        addExtractedValueFromResponseToARequest(extractedKey, methodBody);
+    @Then("^user adds extracted value of key \"(.*)\" at \"(.*?)\" path in \"(.*)\" request body$")
+    public void userAddsExtractedKeyInBody(String extractedKey, String pathToSet, String methodBody) {
+        addExtractedValueFromResponseToARequest(extractedKey, pathToSet, methodBody);
     }
 
     @Then("^user verifies state of key-value in response body$")
@@ -366,8 +370,5 @@ public class UtilStepDefinition extends CommonFunctions {
     @When("^user perform Json comparison$")
     public void performJsonComparison() throws IOException {
         performComparison();
-
     }
-
-
 }

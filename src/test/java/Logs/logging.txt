@@ -10,23 +10,23 @@ Headers:		Accept=*/*
 Cookies:		<none>
 Multiparts:		<none>
 Body:
-{"name":"morpheus","job":"zion resident"}
+{"name":"morpheus","job":"zion resident","createdAt":"2023-08-30T21:47:56.091Z"}
 HTTP/1.1 200 OK
-Date: Wed, 23 Aug 2023 11:14:53 GMT
+Date: Wed, 30 Aug 2023 21:48:19 GMT
 Content-Type: application/json; charset=utf-8
 Content-Length: 40
 Connection: keep-alive
 X-Powered-By: Express
 Access-Control-Allow-Origin: *
-Etag: W/"28-n70fMbkys9GUwECGzW8jnh/ISpo"
+Etag: W/"28-nZ1GuNgs7Q2fil7awB75NpGlaZk"
 Via: 1.1 vegur
 CF-Cache-Status: DYNAMIC
-Report-To: {"endpoints":[{"url":"https:\/\/a.nel.cloudflare.com\/report\/v3?s=K9XyHjydfItF0oL2dMBBMInJm0uJfzNGT3L1JLCk4vGD09e%2BzAyl25ukj7mnP46MAIYzCNHMv22%2BleAGK60yHqjkbeClfQaS50bQSx1DKjyRRDO7ahl1FqY3zg%3D%3D"}],"group":"cf-nel","max_age":604800}
+Report-To: {"endpoints":[{"url":"https:\/\/a.nel.cloudflare.com\/report\/v3?s=%2B92df1zEgXJ7ya7hP%2Fkn0mLouXahtBEcp2rjT97lsMii76XdUJypkBA6gN0KaCn%2BYmk%2B6IGLMAb9ZX4zx8HNzArStQvzVzMIQzfFzjFx9IpV%2BmEwmmzN%2FtzlSA%3D%3D"}],"group":"cf-nel","max_age":604800}
 NEL: {"success_fraction":0,"report_to":"cf-nel","max_age":604800}
 Vary: Accept-Encoding
 Server: cloudflare
-CF-RAY: 7fb2ef382a7cf3a1-BOM
+CF-RAY: 7ff03cbea876e62a-DEL
 
 {
-    "updatedAt": "2023-08-23T11:14:53.044Z"
+    "updatedAt": "2023-08-30T21:48:19.890Z"
 }

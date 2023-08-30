@@ -1,13 +1,13 @@
 @SampleRestTests
-Feature: Sample Feature file to demonstrate how a rest suite would look when using this accelerator
+Feature: Sample Feature file to demonstrate all the accelerator functions
 
   @Authorization
-  Scenario:
+  Scenario: Auth functions
     When user adds Basic Auth with username and password
     When user adds Bearer Auth with clientID and clientSecret
 
   @Requests
-  Scenario:
+  Scenario: Request Creation functions
     #single request
     Given user creates a new request named "requestOne" request and sets "custom" as endpoint
     When user sets Content-Type as "application/json"
@@ -61,7 +61,7 @@ Feature: Sample Feature file to demonstrate how a rest suite would look when usi
       | key           | val           |
     When user makes "get" request for "requestTwo" request
     When user extracts value from "data.email" response
-    When user adds extracted value of key "data.email" in "POSTReqBody" request body
+    When user adds extracted value of key "data.email" at "email" path in "POSTReqBody" request body
 
    #multiple requests(2)
     Given user creates a new request named "requestThree" request and sets "custom" as endpoint
@@ -88,8 +88,8 @@ Feature: Sample Feature file to demonstrate how a rest suite would look when usi
     When user makes a "patch" request
 
   @Validations
-    #single
-  Scenario:
+    #single request
+  Scenario: Response Validation functions
     Then user verifies state of key-value in response body
       | Key             | Value  |
       | topping[1].type | Glazed |
@@ -102,7 +102,7 @@ Feature: Sample Feature file to demonstrate how a rest suite would look when usi
     Then user verifies value "600" is found in Json array response for key with Json Path "custom.value1.value2.prices" in response
     Then user verifies "200" status code
 
-    #multiple
+    #multiple request
     Then user verifies state of key-value in response body for "requestTwo" response
       | Key             | Value  |
       | type            | donut  |
@@ -117,7 +117,7 @@ Feature: Sample Feature file to demonstrate how a rest suite would look when usi
     Then user verifies value "600" is found in Json array response for key with Json Path "custom.value1.value2.prices" for "requestTwo" response
 
   @Clear
-  Scenario:
+  Scenario: Memory clearing functions
     When user deletes "DeleteData" request
     When user deletes "DeleteData" response
     When user clears all requests
