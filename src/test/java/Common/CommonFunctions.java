@@ -3,6 +3,10 @@ package Common;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.Option;
+import com.jayway.jsonpath.PathNotFoundException;
 import io.cucumber.datatable.DataTable;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.base64.Base64;
@@ -33,21 +37,16 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static io.restassured.RestAssured.requestSpecification;
-
 
 public class CommonFunctions {
 
     public static HashMap<String, RequestSpecification> reqSpecMap = new HashMap<>();
     public static HashMap<String, Response> responseMap = new HashMap<>();
-    public static String latestResponse = "";
-    public static Logger logger = LoggerFactory.getLogger(CommonFunctions.class);
-    public static RequestSpecification req;
-    static EnvironmentVariables variables = SystemEnvironmentVariables.createEnvironmentVariables();
-    public static Response response;
-
-    static HashMap<String, String> extractedValue;
-    String environment = System.getProperty("environment");
+    public static String latestResponseKey = "";
+    public static final Logger logger = LoggerFactory.getLogger(CommonFunctions.class);
+    static final EnvironmentVariables variables = SystemEnvironmentVariables.createEnvironmentVariables();
+    static HashMap<String, String> extractedValue = new HashMap<>();
+    final String environment = System.getProperty("environment");
 
     // Comparator variables
     private static Map<String, Object> mismatchedFinal = new HashMap<>();
@@ -60,11 +59,25 @@ public class CommonFunctions {
     private static String res = "";
     private static HashSet<String> finalResult = new HashSet<>();
 
+    public static void resetVariables() {
+        reqSpecMap = new HashMap<>();
+        responseMap = new HashMap<>();
+        latestResponseKey = "";
+        extractedValue = new HashMap<>();
+        mismatchedFinal = new HashMap<>();
+        mismatchInJson1Keys = new ArrayList<>();
+        mismatchInJson2Keys = new ArrayList<>();
+        mismatchInJson1Values = new HashSet<>();
+        mismatchInJson2Values = new HashSet<>();
+        mismatchComments = new HashSet<>();
+        expectedJson = "";
+        res = "";
+        finalResult = new HashSet<>();
+    }
 
     /**
      * Creates a new RequestSpecification for the user to modify and use as and when required
      * <p>This is the starting point for all new requests and must be called for successful Rest request.
-     * <p>
      *
      * @param key      The key name with which the RequestSpecification is stored is mapped.
      * @param endpoint The complete endpoint which will be hit during request
@@ -72,7 +85,7 @@ public class CommonFunctions {
     public void userCreatesRequest(String key, String endpoint) {
         RequestSpecification reqSpec = SerenityRest.given().spec(requestSpecifications(endpoint));
         if (!reqSpecMap.containsKey(key)) {
-            latestResponse = key;
+            latestResponseKey = key;
             reqSpecMap.put(key, reqSpec);
         } else {
             logger.error("A request with this key name already exists. Please rename either request. Request to be renamed: " + key);
@@ -89,13 +102,15 @@ public class CommonFunctions {
     public void userHitsRequest(String requestType) {
         requestType = requestType.toUpperCase();
         try {
-            response = reqSpecMap.get(latestResponse).log().all().when().request(requestType);
+            RequestSpecification requestSpec = reqSpecMap.get(latestResponseKey);
+            Response response = requestSpec.when().log().all().request(requestType);
+            logger.info("Response Body: \n\n" + response.getBody().asPrettyString());
+            responseMap.put(latestResponseKey, response);
         } catch (Exception e) {
             logger.info("Unsupported method: " + requestType);
         }
-        logger.info("Response Body: \n\n" + response.getBody().asPrettyString());
-        responseMap.put(latestResponse, response);
     }
+
 
     /**
      * Initiates a request based on the latest RequestSpecification.<p>
@@ -105,12 +120,14 @@ public class CommonFunctions {
      * @param requestKey  Key name of the request associated with this response
      */
     public void userHitsRequest(String requestType, String requestKey) {
+        Response response = null;
         requestType = requestType.toUpperCase();
         try {
             response = reqSpecMap.get(requestKey).log().all().when().request(requestType);
         } catch (Exception e) {
             logger.info("Unsupported method: " + requestType);
         }
+        assert response != null;
         logger.info("Response Body: \n\n" + response.getBody().asPrettyString());
         responseMap.put(requestKey, response);
     }
@@ -121,7 +138,7 @@ public class CommonFunctions {
      * @param methodBody Key of the method body under which request body is stored in data.json file
      */
     public void userAddsBody(String methodBody) {
-        reqSpecMap.get(latestResponse).log().all().when().body(jsonBody(methodBody, environment));
+        reqSpecMap.get(latestResponseKey).log().all().when().body(jsonBody(methodBody, environment));
     }
 
     /**
@@ -144,11 +161,11 @@ public class CommonFunctions {
      * @param contentType The Content-Type to be set
      */
     public static void setContentType(String contentType) {
-        reqSpecMap.get(latestResponse).contentType(contentType);
+        reqSpecMap.get(latestResponseKey).contentType(contentType);
     }
 
     /**
-     * Sets the ContentType of the latest RequestSpecification
+     * Sets the ContentType of the specified RequestSpecification
      *
      * @param contentType The Content-Type to be set
      * @param requestKey  Key name of the request associated with this response
@@ -161,13 +178,14 @@ public class CommonFunctions {
         reqSpecMap.get(requestKey).contentType(contentType);
     }
 
+
     /**
      * Verifies if the status code of the latest response matches expectations
      *
      * @param statusCode Expected Status Code of the Response.
      */
     public void verifyStatusCode(int statusCode) {
-        Assert.assertEquals("Incorrect status code", response.getStatusCode(), statusCode);
+        Assert.assertEquals("Status Code mismatch", responseMap.get(latestResponseKey).getStatusCode(), statusCode);
         logger.info("Status code verified");
     }
 
@@ -178,28 +196,28 @@ public class CommonFunctions {
      * @param responseKey Key name of the request associated with this response.
      */
     public void verifyStatusCode(int statusCode, String responseKey) {
-        if (!reqSpecMap.containsKey(responseKey)) {
+        if (!responseMap.containsKey(responseKey)) {
             logger.error("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
         }
         Response res = responseMap.get(responseKey);
-        Assert.assertEquals("Status code didn't match", statusCode, res.getStatusCode());
+        Assert.assertEquals("Status Code mismatch", statusCode, res.getStatusCode());
         logger.info("Status code verified");
     }
 
     /**
-     * Set header to latest request specification via String key and value
+     * Add a single header to the latest request specification
      *
      * @param headerName  Header Name
      * @param headerValue Header Value
      */
 
     public static void addHeaders(String headerName, String headerValue) {
-        reqSpecMap.get(latestResponse).header(headerName, headerValue);
+        reqSpecMap.get(latestResponseKey).header(headerName, headerValue);
     }
 
     /**
-     * Set header to latest request specification via String key and value
+     * Add a single header to the specified request specification
      *
      * @param headerName  Header Name
      * @param headerValue Header Value
@@ -214,17 +232,50 @@ public class CommonFunctions {
     }
 
     /**
-     * Set header to latest request specification via String key and value
+     * Add multiple headers to the latest request specification via DataTable
+     *
+     * @param dt DataTable of Header Name and Header Value
+     */
+    public static void addHeaders(DataTable dt) {
+        if (validateHeader(dt, "Header Name") && validateHeader(dt, "Header Value")) {
+            List<Map<String, String>> headers = dt.asMaps();
+            for (Map<String, String> header : headers) {
+                reqSpecMap.get(latestResponseKey).header(header.get("Header Name"), header.get("Header Value"));
+            }
+        }
+    }
+
+    /**
+     * Add multiple headers to the specified request specification via DataTable
+     *
+     * @param dt         DataTable of Header Name and Header Value
+     * @param requestKey Key name of the request associated with this response
+     */
+    public static void addHeaders(String requestKey, DataTable dt) {
+        if (!reqSpecMap.containsKey(requestKey)) {
+            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+        }
+        if (validateHeader(dt, "Header Name") && validateHeader(dt, "Header Value")) {
+            List<Map<String, String>> headers = dt.asMaps();
+            for (Map<String, String> header : headers) {
+                reqSpecMap.get(requestKey).header(header.get("Header Name"), header.get("Header Value"));
+            }
+        }
+    }
+
+    /**
+     * Add multiple headers to the latest request specification via a Map
      *
      * @param headers Headers as a Map of header key and header value
      */
 
     public static void addHeadersViaMap(Map<String, String> headers) {
-        reqSpecMap.get(latestResponse).headers(headers);
+        reqSpecMap.get(latestResponseKey).headers(headers);
     }
 
     /**
-     * Set header to latest request specification via String key and value
+     * Add multiple headers to the specified request specification via a Map
      *
      * @param headers    Headers as a Map of header key and header value
      * @param requestKey Key name of the request associated with this response
@@ -239,65 +290,18 @@ public class CommonFunctions {
     }
 
     /**
-     * Sets a Header to the latest RequestSpecification via DataTable
+     * Add a Query Parameter to the latest request specification
      *
-     * @param dt DataTable of Header Name and Header Value
+     * @param parameterKey   Header Name
+     * @param parameterValue Header Value
      */
-    public static void addHeaders(DataTable dt) {
-        List<Map<String, String>> headers = dt.asMaps();
-        for (Map<String, String> header : headers) {
-            reqSpecMap.get(latestResponse).header(header.get("Header Name"), header.get("Header Value"));
-        }
+
+    public static void addQueryParams(String parameterKey, String parameterValue) {
+        reqSpecMap.get(latestResponseKey).queryParam(parameterKey, parameterValue);
     }
 
     /**
-     * Sets a Header to the latest RequestSpecification
-     *
-     * @param dt         DataTable of Header Name and Header Value
-     * @param requestKey Key name of the request associated with this response
-     */
-    public static void addHeaders(String requestKey, DataTable dt) {
-        if (!reqSpecMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
-            Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
-        }
-        List<Map<String, String>> headers = dt.asMaps();
-        for (Map<String, String> header : headers) {
-            reqSpecMap.get(requestKey).header(header.get("Header Name"), header.get("Header Value"));
-        }
-    }
-
-    /**
-     * Sets a queryParam to the RequestSpecification
-     *
-     * @param dt DataTable of Parameter Key and Value
-     */
-    public static void addQueryParams(DataTable dt) {
-        List<Map<String, String>> queryParams = dt.asMaps();
-        for (Map<String, String> params : queryParams) {
-            reqSpecMap.get(latestResponse).queryParam(params.get("Parameter Key"), params.get("Parameter Value"));
-        }
-    }
-
-    /**
-     * Sets a Query Params to the latest RequestSpecification
-     *
-     * @param dt         DataTable of Parameter Key and Value
-     * @param requestKey Key name of the request associated with this response
-     */
-    public static void addQueryParams(String requestKey, DataTable dt) {
-        if (!reqSpecMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
-            Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
-        }
-        List<Map<String, String>> queryParams = dt.asMaps();
-        for (Map<String, String> params : queryParams) {
-            reqSpecMap.get(requestKey).queryParam(params.get("Parameter Key"), params.get("Parameter Value"));
-        }
-    }
-
-    /**
-     * Set queryParams to latest request specification via String key and value
+     * Add a Query Parameter to the specified request specification
      *
      * @param parameterKey   Query Param Name
      * @param parameterValue Query Param Value
@@ -314,27 +318,49 @@ public class CommonFunctions {
     }
 
     /**
-     * Set queryParams to latest request specification via String key and value
+     * Add multiple Query Parameters to the latest RequestSpecification via a DataTable
      *
-     * @param parameterKey   Header Name
-     * @param parameterValue Header Value
+     * @param dt DataTable of Parameter Key and Value
      */
-
-    public static void addQueryParams(String parameterKey, String parameterValue) {
-        reqSpecMap.get(latestResponse).queryParam(parameterKey, parameterValue);
+    public static void addQueryParams(DataTable dt) {
+        if (validateHeader(dt, "Parameter Key") && validateHeader(dt, "Parameter Value")) {
+            List<Map<String, String>> queryParams = dt.asMaps();
+            for (Map<String, String> params : queryParams) {
+                reqSpecMap.get(latestResponseKey).queryParam(params.get("Parameter Key"), params.get("Parameter Value"));
+            }
+        }
     }
 
     /**
-     * Set queryParams to latest request specification via Map
+     * Add multiple Query Parameters to the specified RequestSpecification via a DataTable
+     *
+     * @param dt         DataTable of Parameter Key and Value
+     * @param requestKey Key name of the request associated with this response
+     */
+    public static void addQueryParams(String requestKey, DataTable dt) {
+        if (!reqSpecMap.containsKey(requestKey)) {
+            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+        }
+        if (validateHeader(dt, "Parameter Key") && validateHeader(dt, "Parameter Value")) {
+            List<Map<String, String>> queryParams = dt.asMaps();
+            for (Map<String, String> params : queryParams) {
+                reqSpecMap.get(requestKey).queryParam(params.get("Parameter Key"), params.get("Parameter Value"));
+            }
+        }
+    }
+
+    /**
+     * Add multiple Query Parameters to latest request specification via a Map
      *
      * @param queryParam Query Params as a Map of param key and param value
      */
     public static void addQueryParamsViaMap(Map<String, String> queryParam) {
-        reqSpecMap.get(latestResponse).queryParams(queryParam);
+        reqSpecMap.get(latestResponseKey).queryParams(queryParam);
     }
 
     /**
-     * Set queryParams to latest request specification via Map
+     * Add multiple Query Parameters to the specified request specification via a Map
      *
      * @param queryParam Query Params as a Map of param key and param value
      * @param requestKey Key name of the request associated with this response
@@ -348,36 +374,17 @@ public class CommonFunctions {
     }
 
     /**
-     * Sets a Form Params to the latest RequestSpecification
+     * Add a Form Parameter to the latest request specification
      *
-     * @param dt         DataTable of Parameter Key and Value
-     * @param requestKey Key name of the request associated with this response
+     * @param parameterKey   Form Param Name
+     * @param parameterValue Form Param Value
      */
-    public static void addFormParams(String requestKey, DataTable dt) {
-        if (!reqSpecMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
-            Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
-        }
-        List<Map<String, String>> formParams = dt.asMaps();
-        for (Map<String, String> params : formParams) {
-            reqSpecMap.get(requestKey).formParam(params.get("Parameter Key"), params.get("Parameter Value"));
-        }
+    public static void addFormParams(String parameterKey, String parameterValue) {
+        reqSpecMap.get(latestResponseKey).queryParam(parameterKey, parameterValue);
     }
 
     /**
-     * Sets a Form Params to the latest RequestSpecification
-     *
-     * @param dt DataTable of Parameter Key and Value
-     */
-    public static void addFormParams(DataTable dt) {
-        List<Map<String, String>> formParams = dt.asMaps();
-        for (Map<String, String> params : formParams) {
-            reqSpecMap.get(latestResponse).formParam(params.get("Parameter Key"), params.get("Parameter Value"));
-        }
-    }
-
-    /**
-     * Set FormParams to latest request specification via String key and value
+     * Add a Form Parameter to the specified request specification
      *
      * @param parameterKey   Form Param Name
      * @param parameterValue Form Param Value
@@ -393,27 +400,49 @@ public class CommonFunctions {
     }
 
     /**
-     * Set FormParams to latest request specification via String key and value
+     * Add multiple Form Parameters to the latest RequestSpecification via a DataTable
      *
-     * @param parameterKey   Form Param Name
-     * @param parameterValue Form Param Value
+     * @param dt DataTable of Parameter Key and Value
      */
-    public static void addFormParams(String parameterKey, String parameterValue) {
-        reqSpecMap.get(latestResponse).queryParam(parameterKey, parameterValue);
+    public static void addFormParams(DataTable dt) {
+        if (validateHeader(dt, "Parameter Key") && validateHeader(dt, "Parameter Value")) {
+            List<Map<String, String>> formParams = dt.asMaps();
+            for (Map<String, String> params : formParams) {
+                reqSpecMap.get(latestResponseKey).formParam(params.get("Parameter Key"), params.get("Parameter Value"));
+            }
+        }
     }
 
     /**
-     * Set Form Params to latest request specification via Map
+     * Add multiple Form Parameters to the specified RequestSpecification via a DataTable
+     *
+     * @param dt         DataTable of Parameter Key and Value
+     * @param requestKey Key name of the request associated with this response
+     */
+    public static void addFormParams(String requestKey, DataTable dt) {
+        if (!reqSpecMap.containsKey(requestKey)) {
+            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+        }
+        if (validateHeader(dt, "Parameter Key") && validateHeader(dt, "Parameter Value")) {
+            List<Map<String, String>> formParams = dt.asMaps();
+            for (Map<String, String> params : formParams) {
+                reqSpecMap.get(requestKey).formParam(params.get("Parameter Key"), params.get("Parameter Value"));
+            }
+        }
+    }
+
+    /**
+     * Add multiple Form Parameters to the latest request specification via a Map
      *
      * @param formParams Form Params as a Map of param key and param value
      */
     public static void addFormParamsViaMap(Map<String, String> formParams) {
-
-        reqSpecMap.get(latestResponse).formParams(formParams);
+        reqSpecMap.get(latestResponseKey).formParams(formParams);
     }
 
     /**
-     * Set Form Params to latest request specification via Map
+     * Add multiple Form Parameters to the specified request specification via a Map
      *
      * @param formParams Form Params as a Map of param key and param value
      * @param requestKey Key name of the request associated with this response
@@ -428,37 +457,18 @@ public class CommonFunctions {
 
 
     /**
-     * Sets a Path Params to the latest RequestSpecification
+     * Add a Path Parameter to the latest request specification
      *
-     * @param dt         DataTable of Parameter Key and Value
-     * @param requestKey Key name of the request associated with this response
+     * @param parameterKey   Path Param Name
+     * @param parameterValue Path Param Value
      */
-    public static void addPathParams(String requestKey, DataTable dt) {
-        if (!reqSpecMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
-            Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
-        }
-        List<Map<String, String>> pathParams = dt.asMaps();
-        for (Map<String, String> params : pathParams) {
-            reqSpecMap.get(requestKey).pathParam(params.get("Parameter Key"), params.get("Parameter Value"));
-        }
+    public static void addPathParams(String parameterKey, String parameterValue) {
+
+        reqSpecMap.get(latestResponseKey).pathParam(parameterKey, parameterValue);
     }
 
     /**
-     * Sets a Path Params to the latest RequestSpecification
-     *
-     * @param dt DataTable of Parameter Key and Value
-     */
-
-    public static void addPathParams(DataTable dt) {
-        List<Map<String, String>> pathParams = dt.asMaps();
-        for (Map<String, String> params : pathParams) {
-            reqSpecMap.get(latestResponse).pathParam(params.get("Parameter Key"), params.get("Parameter Value"));
-        }
-    }
-
-    /**
-     * Set PathParams to latest request specification via String key and value
+     * Add a Path Parameter to the specified request specification
      *
      * @param parameterKey   Path Param Name
      * @param parameterValue Path Param Value
@@ -474,29 +484,51 @@ public class CommonFunctions {
     }
 
     /**
-     * Set PathParams to latest request specification via String key and value
+     * Add Path Parameters to the latest RequestSpecification via a DataTable
      *
-     * @param parameterKey   Path Param Name
-     * @param parameterValue Path Param Value
+     * @param dt DataTable of Parameter Key and Value
      */
-    public static void addPathParams(String parameterKey, String parameterValue) {
 
-        reqSpecMap.get(latestResponse).pathParam(parameterKey, parameterValue);
+    public static void addPathParams(DataTable dt) {
+        if (validateHeader(dt, "Parameter Key") && validateHeader(dt, "Parameter Value")) {
+            List<Map<String, String>> pathParams = dt.asMaps();
+            for (Map<String, String> params : pathParams) {
+                reqSpecMap.get(latestResponseKey).pathParam(params.get("Parameter Key"), params.get("Parameter Value"));
+            }
+        }
     }
 
+    /**
+     * Add Path Parameters to the specified RequestSpecification via a DataTable
+     *
+     * @param dt         DataTable of Parameter Key and Value
+     * @param requestKey Key name of the request associated with this response
+     */
+    public static void addPathParams(String requestKey, DataTable dt) {
+        if (!reqSpecMap.containsKey(requestKey)) {
+            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+        }
+        if (validateHeader(dt, "Parameter Key") && validateHeader(dt, "Parameter Value")) {
+            List<Map<String, String>> pathParams = dt.asMaps();
+            for (Map<String, String> params : pathParams) {
+                reqSpecMap.get(requestKey).pathParam(params.get("Parameter Key"), params.get("Parameter Value"));
+            }
+        }
+
+    }
 
     /**
-     * Set Path Params to latest request specification via Map
+     * Add multiple Path Parameters to the latest request specification via Map
      *
      * @param pathParams Path Params as a Map of param key and param value
      */
     public static void addPathParamsViaMap(Map<String, String> pathParams) {
-
-        reqSpecMap.get(latestResponse).pathParams(pathParams);
+        reqSpecMap.get(latestResponseKey).pathParams(pathParams);
     }
 
     /**
-     * Set Path Params to latest request specification via Map
+     * Add multiple Path Parameters to the specified request specification via Map
      *
      * @param pathParams Path Params as a Map of param key and param value
      * @param requestKey Key name of the request associated with this response
@@ -510,39 +542,113 @@ public class CommonFunctions {
         reqSpecMap.get(requestKey).pathParams(pathParams);
     }
 
-
     /**
-     * Return value of key from response
+     * Extract value of a key from the latest response
      *
      * @param key The key whose value needs to get logged
      */
 
     public static void extractValue(String key) {
-        extractedValue.put(key, response.jsonPath().getString(key));
+        extractedValue.put(key, responseMap.get(latestResponseKey).jsonPath().getString(key));
+    }
+
+    public static void extractValues(DataTable keys) {
+        List<Map<String, String>> keyMaps = keys.asMaps();
+        if (validateHeader(keys, "Key Path")) {
+            for (Map<String, String> keyMap : keyMaps) {
+                String key = keyMap.get("Key Path");
+                extractedValue.put(key, responseMap.get(latestResponseKey).jsonPath().getString(key));
+            }
+        } else {
+            logger.error("DataTable column 'Key Path' not found or empty.");
+        }
     }
 
     /**
-     * Adds the extracted key value from another response body to the request body of another request
+     * Function to validate header name of the datatable passed from the feature file
      *
-     * @param keyToAdd   Key which needs to be added in method body
+     * @param dataTable      dataTable which is passed from feature file
+     * @param expectedHeader expected header name
+     */
+    public static boolean validateHeader(DataTable dataTable, String expectedHeader) {
+        List<String> actualHeader = dataTable.column(0);
+        if (!actualHeader.get(0).equals(expectedHeader)) {
+            logger.error("Expected header: " + expectedHeader + ", Actual header: " + actualHeader.get(0));
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+
+    public static void extractValues(DataTable keys, String requestKey) {
+        if (!responseMap.containsKey(requestKey)) {
+            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            return;
+        }
+        List<Map<String, String>> keyMaps = keys.asMaps();
+        if (validateHeader(keys, "Key Path")) {
+            for (Map<String, String> keyMap : keyMaps) {
+                String key = keyMap.get("Key Path");
+                extractedValue.put(key, responseMap.get(latestResponseKey).jsonPath().getString(key));
+            }
+        } else {
+            logger.error("DataTable column 'Key Path' not found or empty.");
+        }
+    }
+
+
+    /**
+     * Extract value of a key from the specified response
+     *
+     * @param key        The key whose value needs to get logged
+     * @param requestKey The Response which needs to be referred to for key-value extraction
+     */
+
+    public static void extractValue(String key, String requestKey) {
+        if (!responseMap.containsKey(requestKey)) {
+            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            return;
+        }
+        extractedValue.put(key, responseMap.get(requestKey).jsonPath().getString(key));
+    }
+
+    /**
+     * Adds the extracted key value from another response body to the request body the latest request
+     *
+     * @param newKeyPath JsonPath of the Key which needs to be added in method body
+     * @param keyToAdd   Name of the Key which needs to be added
      * @param methodBody Method body in which key needs to be added
      */
 
-    public void addExtractedValueFromResponseToARequest(String keyToAdd, String methodBody) {
-        reqSpecMap.get(latestResponse).log().all().when().body(jsonBody(methodBody, environment, keyToAdd));
+    public void addExtractedValueFromResponseToARequest(String keyToAdd, String newKeyPath, String methodBody) {
+        reqSpecMap.get(latestResponseKey).log().all().when().body(jsonBody(methodBody, environment, newKeyPath, keyToAdd));
     }
 
     /**
-     * This function is creating and returning the requests which contains
-     * endPoint.It also logs all
-     * the requests and responses in "logging.txt" file
+     * Adds the extracted key value from another response body to the request body the specified request
+     * <p>
      *
-     * @param endpoint The endPoint at which request will get hit
+     * @param newKeyPath JsonPath of the Key which needs to be added in method body
+     * @param keyToAdd   Name of the Key which needs to be added
+     * @param methodBody Method body in which key needs to be added
+     */
+
+    public void addExtractedValueFromResponseToARequest(String keyToAdd, String newKeyPath, String methodBody, String requestKey) {
+        reqSpecMap.get(requestKey).log().all().when().body(jsonBody(methodBody, environment, newKeyPath, keyToAdd));
+    }
+
+    /**
+     * This function creates and returns the request specifications with a set endpoint.
+     *
+     * @param endpoint The endpoint at which request will get hit
      */
     public RequestSpecification requestSpecifications(String endpoint) {
         File logDir = new File("src/test/java/Logs/");
         File logFile = new File(logDir, "logging.txt");
-
+        RequestSpecification req = SerenityRest.given();
         String baseUri = EnvironmentSpecificConfiguration.from(variables).getProperty(endpoint);
 
         // Check if query parameters are present in the endpoint
@@ -575,7 +681,6 @@ public class CommonFunctions {
             }
         }
 
-
         try {
             PrintStream log = new PrintStream(new FileOutputStream(logFile));
             req = new RequestSpecBuilder()
@@ -591,12 +696,12 @@ public class CommonFunctions {
     }
 
     /**
-     * Verifies if the latest response contains a particular string in the response body
+     * Verifies if the latest response contains the specified string in the response body
      *
      * @param expectedMessage Expected Message to be found in Response Body.
      */
     public static void verifyPresenceOfMessage(String expectedMessage) {
-        Response res = responseMap.get(latestResponse);
+        Response res = responseMap.get(latestResponseKey);
         String responseMessage = res.body().asPrettyString();
         if (responseMessage.contains(expectedMessage)) {
             logger.info("Successfully found " + expectedMessage + " is Response body", true);
@@ -607,16 +712,12 @@ public class CommonFunctions {
     }
 
     /**
-     * Verifies if the specified response contains a particular string in the response body
+     * Verifies if the specified response contains the specified string in the response body
      *
      * @param expectedMessage Expected Message to be found in Response Body.
      * @param responseKey     Key name of the request associated with this response.
      */
     public static void verifyPresenceOfMessage(String expectedMessage, String responseKey) {
-        if (!reqSpecMap.containsKey(responseKey)) {
-            logger.error("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
-            Assert.fail("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
-        }
         if (!responseMap.containsKey(responseKey)) {
             logger.error("No such response found. Please recheck the provided Response Key: " + responseKey);
             Assert.fail("No such response found. Please recheck the provided Response Key: " + responseKey);
@@ -634,19 +735,13 @@ public class CommonFunctions {
 
     /**
      * Verifies if the latest response was returned within the specified time limit or not.
-     * <p>
-     * Trims the time limit down to 15 seconds as an API is not expected to take longer under normal circumstances.
      *
      * @param expectedTime Maximum amount of time the API is expected to take.
      */
     public static void verifyResponseTime(String expectedTime) {
         try {
             float expectedTimeInSeconds = Float.parseFloat(expectedTime);
-            if (expectedTimeInSeconds > 15) {
-                expectedTimeInSeconds = 15;
-                logger.info("Expected time is much more. Trimming it down to 15 seconds");
-            }
-            Response res = responseMap.get(latestResponse);
+            Response res = responseMap.get(latestResponseKey);
             long actualTime = res.getTime();
             logger.info("Actual Time: " + actualTime + " milliseconds and expected time is: " + expectedTimeInSeconds * 1000 + " milliseconds");
             Assert.assertTrue("Response took longer than expected. Expected Time: At least " + expectedTimeInSeconds * 1000 + " milliseconds. Actual time: " + actualTime + " milliseconds", actualTime < expectedTimeInSeconds * 1000);
@@ -654,46 +749,30 @@ public class CommonFunctions {
             logger.error("Invalid time format. Please recheck.");
             Assert.fail("Invalid time format. Please recheck.");
         }
-
     }
 
     /**
      * Verifies if the specified response was returned within the specified time limit or not.
-     * <p>
-     * Trims the time limit down to 5 seconds as an API is not expected to take longer under normal circumstances.
      *
      * @param expectedTime Maximum amount of time the API is expected to take.
      * @param responseKey  Key name of the request associated with this response.
      */
     public static void verifyResponseTime(String expectedTime, String responseKey) {
-        if (!reqSpecMap.containsKey(responseKey)) {
-            logger.error("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
-            Assert.fail("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
-            return;
-        }
-
-        float expectedTimeInSeconds = -1;
-        try {
-            expectedTimeInSeconds = Float.parseFloat(expectedTime);
-        } catch (NumberFormatException ex) {
-            logger.error("Invalid time format. Please recheck.");
-            Assert.fail("Invalid time format. Please recheck.");
-            return;
-        }
-
         if (!responseMap.containsKey(responseKey)) {
             logger.error("No such response found. Please recheck the provided Response Key: " + responseKey);
             Assert.fail("No such response found. Please recheck the provided Response Key: " + responseKey);
             return;
         }
-        Response res = responseMap.get(responseKey);
-        if (expectedTimeInSeconds > 15) {
-            expectedTimeInSeconds = 15;
-            logger.info("Expected time is much more. Trimming it down to 15 seconds");
+        try {
+            float expectedTimeInSeconds = Float.parseFloat(expectedTime);
+            Response res = responseMap.get(latestResponseKey);
+            long actualTime = res.getTime();
+            logger.info("Actual Time: " + actualTime + " milliseconds and expected time is: " + expectedTimeInSeconds * 1000 + " milliseconds");
+            Assert.assertTrue("Response took longer than expected. Expected Time: At least " + expectedTimeInSeconds * 1000 + " milliseconds. Actual time: " + actualTime + " milliseconds", actualTime < expectedTimeInSeconds * 1000);
+        } catch (NumberFormatException e) {
+            logger.error("Invalid time format. Please recheck.");
+            Assert.fail("Invalid time format. Please recheck.");
         }
-        long actualTime = res.getTime();
-        logger.info("Actual Time: " + actualTime + " milliseconds and expected time is: " + expectedTimeInSeconds * 1000 + " milliseconds");
-        Assert.assertTrue("Response took longer than expected. Expected Time: At least " + expectedTimeInSeconds * 1000 + " milliseconds. Actual time: " + actualTime + " milliseconds", actualTime < expectedTimeInSeconds * 1000);
     }
 
     /**
@@ -706,7 +785,7 @@ public class CommonFunctions {
      */
 
     public static void verifyJsonArraySize(String pathProvided, String size) {
-        Response res = responseMap.get(latestResponse);
+        Response res = responseMap.get(latestResponseKey);
         int arrSize = -1;
         Object valueFoundAtPath = res.jsonPath().get(pathProvided);
 
@@ -751,11 +830,11 @@ public class CommonFunctions {
      * @param responseKey  Key name of the request associated with this response.
      */
     public static void verifyJsonArraySize(String pathProvided, int size, String responseKey) {
+        if (!responseMap.containsKey(responseKey)) {
+            logger.error("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
+            Assert.fail("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
+        }
         try {
-            if (!reqSpecMap.containsKey(responseKey)) {
-                logger.error("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
-                Assert.fail("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
-            }
             if (!responseMap.containsKey(responseKey)) {
                 logger.error("No such response found. Please recheck the provided Response Key: " + responseKey);
                 Assert.fail("No such response found. Please recheck the provided Response Key: " + responseKey);
@@ -794,25 +873,28 @@ public class CommonFunctions {
     }
 
     /**
-     * Validate presence of key-value pair from response body for a given jsonPath
+     * Validate presence of key-value pair in the latest response body for a given JsonPath
      *
-     * @param verificationData DataTable containing JsonPath of Key ,operation and Expected Value
+     * @param verificationData DataTable containing JsonPath of Key , the corresponding operation, and Expected Value
      */
     public static void verifyKeyValueInResponseBody(DataTable verificationData) {
-        if (!responseMap.containsKey(latestResponse)) {
-            logger.error("No such response found. Please recheck the provided Response Key: " + latestResponse);
-            Assert.fail("No such response found. Please recheck the provided Response Key: " + latestResponse);
-        } else {
-            Response res = responseMap.get(latestResponse);
-            JsonPath jsonPath = res.jsonPath();
-            List<Map<String, String>> verificationList = verificationData.asMaps();
-
+        Response res = responseMap.get(latestResponseKey);
+        JsonPath jsonPath = res.jsonPath();
+        List<Map<String, String>> verificationList = verificationData.asMaps();
+        if (validateHeader(verificationData, "Key") && validateHeader(verificationData, "operation") && validateHeader(verificationData, "Value")) {
             for (Map<String, String> verification : verificationList) {
                 String key = verification.get("Key");
                 String operation = verification.get("operation");
                 String expectedValue = verification.get("Value");
 
-                String actualValue = jsonPath.getString(key);
+                String actualValue = null;
+                try {
+                    actualValue = jsonPath.getString(key);
+                    Assert.assertNotNull("The value of the key specified by Json Path: " + key + " was null", actualValue);
+                } catch (PathNotFoundException e) {
+                    logger.error("The Key specified by Json Path: " + key + " was not found");
+                    Assert.fail("The Key specified by Json Path: " + key + " was not found");
+                }
 
                 switch (operation.toLowerCase()) {
                     case "equals":
@@ -840,31 +922,35 @@ public class CommonFunctions {
     }
 
     /**
-     * Validate presence of key-value pair from response body for a given jsonPath
+     * Validate presence of key-value pair in the specified response body for a given JsonPath
      *
-     * @param dataTable   DataTable containing JsonPath of Key ,operation and Expected Value
-     * @param responseKey Key name of the request associated with this response.
+     * @param verificationData DataTable containing JsonPath of Key ,operation and Expected Value
+     * @param responseKey      Key name of the request associated with this response.
      */
 
-    public static void verifyKeyValueInResponseBody(DataTable dataTable, String responseKey) {
-        if (!reqSpecMap.containsKey(responseKey)) {
-            logger.error("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
-            Assert.fail("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
-        }
+    public static void verifyKeyValueInResponseBody(DataTable verificationData, String responseKey) {
         if (!responseMap.containsKey(responseKey)) {
             logger.error("No such response found. Please recheck the provided Response Key: " + responseKey);
             Assert.fail("No such response found. Please recheck the provided Response Key: " + responseKey);
-        } else {
-            Response res = responseMap.get(responseKey);
-            JsonPath jsonPath = res.jsonPath();
-            List<Map<String, String>> verificationList = dataTable.asMaps();
+        }
+        Response res = responseMap.get(responseKey);
+        JsonPath jsonPath = res.jsonPath();
+        List<Map<String, String>> verificationList = verificationData.asMaps();
+        if (validateHeader(verificationData, "Key") && validateHeader(verificationData, "operation") && validateHeader(verificationData, "Value")) {
 
             for (Map<String, String> verification : verificationList) {
                 String key = verification.get("Key");
                 String operation = verification.get("operation");
                 String expectedValue = verification.get("Value");
 
-                String actualValue = jsonPath.getString(key);
+                String actualValue = null;
+                try {
+                    actualValue = jsonPath.getString(key);
+                    Assert.assertNotNull("The value of the key specified by Json Path: " + key + " was null", actualValue);
+                } catch (PathNotFoundException e) {
+                    logger.error("The Key specified by Json Path: " + key + " was not found");
+                    Assert.fail("The Key specified by Json Path: " + key + " was not found");
+                }
 
                 switch (operation.toLowerCase()) {
                     case "equals":
@@ -888,63 +974,6 @@ public class CommonFunctions {
                         Assert.fail("Unsupported operation: " + operation);
                 }
             }
-        }
-    }
-
-    /**
-     * Verifies presence of a particular element in a JSONArray in the specified response
-     * <p>
-     * Uses JsonPath to search for the value and verifies if it is a JSONArray or not beforehand.
-     * <p>
-     * Does not work with Array of JSONObjects as they will have an extended JsonPath.
-     *
-     * @param pathProvided  JSON Path of the parent JSON Array.
-     * @param expectedValue Value of item expected to be found in the JSON Array found using the provided JSON Path.
-     * @param responseKey   Key name of the request associated with this response.
-     */
-    public static void verifyValueInJsonArray(String pathProvided, String expectedValue, String responseKey) {
-        if (!reqSpecMap.containsKey(responseKey)) {
-            logger.error("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
-            Assert.fail("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
-        }
-
-        if (!responseMap.containsKey(responseKey)) {
-            logger.error("No such response found. Please recheck the provided Response Key: " + responseKey);
-            Assert.fail("No such response found. Please recheck the provided Response Key: " + responseKey);
-        } else {
-            Response res = responseMap.get(responseKey);
-            Object valueFoundAtPath = res.jsonPath().get(pathProvided);
-
-            if (ObjectUtils.allNull(valueFoundAtPath)) {
-                logger.error("No value found for the provided key: \"" + pathProvided + "\"");
-                Assert.fail("No value found for the provided key: \"" + pathProvided + "\"");
-            } else if (valueFoundAtPath instanceof ArrayList) {
-                ArrayList arr = (ArrayList) valueFoundAtPath;
-
-                if (!(arr.get(0) instanceof JSONObject)) {
-                    boolean found = false;
-                    for (Object obj : arr) {
-                        found = String.valueOf(obj).equals(String.valueOf(expectedValue));
-                        if (found) break;
-                    }
-
-                    if (!found) {
-                        logger.error("Couldn't find " + expectedValue + " in response for the provided key: \"" + pathProvided + "\"");
-                        Assert.fail("Couldn't find " + expectedValue + " in response for the provided key: \"" + pathProvided + "\"");
-                    }
-                } else {
-                    logger.error("Value for the provided key: " + pathProvided + " is a JSONArray of JSONObjects. Can't validate the value");
-                    Assert.fail("Value for the provided key: " + pathProvided + " is a JSONArray of JSONObjects. Can't validate the value");
-                }
-            } else {
-                logger.error("Value for the provided key: " + pathProvided + " is not a JSONArray. Can't validate the value");
-                Assert.fail("Value for the provided key: " + pathProvided + " is not a JSONArray. Can't validate the value");
-            }
-
-            if (pathProvided.split("\\.").length == 1)
-                logger.info("Successfully verified presence of " + expectedValue + " in response for the provided key: \"" + pathProvided + "\"");
-            else
-                logger.info("Successfully verified presence of " + expectedValue + " in response for the provided path: \"" + pathProvided + "\"");
         }
     }
 
@@ -959,7 +988,7 @@ public class CommonFunctions {
      * @param expectedValue Value of item expected to be found in the JSON Array found using the provided JSON Path.
      */
     public static void verifyValueInJsonArray(String pathProvided, String expectedValue) {
-        Response res = responseMap.get(latestResponse);
+        Response res = responseMap.get(latestResponseKey);
         Object valueFoundAtPath = res.jsonPath().get(pathProvided);
         if (ObjectUtils.allNull(valueFoundAtPath)) {
             logger.error("No value found for for provided key: \"" + pathProvided + "\"");
@@ -988,7 +1017,85 @@ public class CommonFunctions {
             logger.info("Successfully verified presence of " + expectedValue + " in response for provided key: \"" + pathProvided + "\"");
         else
             logger.info("Successfully verified presence of " + expectedValue + " in response for provided path: \"" + pathProvided + "\"");
+    }
 
+    /**
+     * Verifies presence of a particular element in a JSONArray in the specified response
+     * <p>
+     * Uses JsonPath to search for the value and verifies if it is a JSONArray or not beforehand.
+     * <p>
+     * Does not work with Array of JSONObjects as they will have an extended JsonPath.
+     *
+     * @param pathProvided  JSON Path of the parent JSON Array.
+     * @param expectedValue Value of item expected to be found in the JSON Array found using the provided JSON Path.
+     * @param responseKey   Key name of the request associated with this response.
+     */
+    public static void verifyValueInJsonArray(String pathProvided, String expectedValue, String responseKey) {
+        if (!responseMap.containsKey(responseKey)) {
+            logger.error("No such response found. Please recheck the provided Response Key: " + responseKey);
+            Assert.fail("No such response found. Please recheck the provided Response Key: " + responseKey);
+        }
+        Response res = responseMap.get(responseKey);
+        Object valueFoundAtPath = res.jsonPath().get(pathProvided);
+
+        if (ObjectUtils.allNull(valueFoundAtPath)) {
+            logger.error("No value found for the provided key: \"" + pathProvided + "\"");
+            Assert.fail("No value found for the provided key: \"" + pathProvided + "\"");
+        } else if (valueFoundAtPath instanceof ArrayList) {
+            ArrayList arr = (ArrayList) valueFoundAtPath;
+
+            if (!(arr.get(0) instanceof JSONObject)) {
+                boolean found = false;
+                for (Object obj : arr) {
+                    found = String.valueOf(obj).equals(String.valueOf(expectedValue));
+                    if (found) break;
+                }
+
+                if (!found) {
+                    logger.error("Couldn't find " + expectedValue + " in response for the provided key: \"" + pathProvided + "\"");
+                    Assert.fail("Couldn't find " + expectedValue + " in response for the provided key: \"" + pathProvided + "\"");
+                }
+            } else {
+                logger.error("Value for the provided key: " + pathProvided + " is a JSONArray of JSONObjects. Can't validate the value");
+                Assert.fail("Value for the provided key: " + pathProvided + " is a JSONArray of JSONObjects. Can't validate the value");
+            }
+        } else {
+            logger.error("Value for the provided key: " + pathProvided + " is not a JSONArray. Can't validate the value");
+            Assert.fail("Value for the provided key: " + pathProvided + " is not a JSONArray. Can't validate the value");
+        }
+
+        if (pathProvided.split("\\.").length == 1)
+            logger.info("Successfully verified presence of " + expectedValue + " in response for the provided key: \"" + pathProvided + "\"");
+        else
+            logger.info("Successfully verified presence of " + expectedValue + " in response for the provided path: \"" + pathProvided + "\"");
+
+    }
+
+    /**
+     * Verifies whether the latest response matches the specified JSON Schema
+     *
+     * @param schemaName Name of the Schema which is to be referred to for comparison. Must be in the src\test\resources\schemas directory.
+     */
+    public static void verifyResponseSchema(String schemaName) {
+        Response res = responseMap.get(latestResponseKey);
+        try {
+            res.then().assertThat().body(JsonSchemaValidator.matchesJsonSchema(new File(System.getProperty("user.dir") + "\\src\\test\\resources\\schemas\\" + schemaName + ".json")));
+        } catch (Exception e) {
+            if (e.getMessage().contains("JsonMappingException") || e.getMessage().contains("IOException")) {
+                logger.error("Failed to validate Schema. Body may not match expectations. Exception: " + e.getMessage());
+                Assert.fail("Failed to validate Schema. Body may not match expectations. Exception: " + e.getMessage());
+            } else if (e.getMessage().contains("FileNotFoundException")) {
+                logger.error("Failed to validate Schema. Could not find the reference Schema");
+                Assert.fail("Failed to validate Schema. Could not find the reference Schema");
+            } else if (e.getMessage().contains("JsonParseException")) {
+                logger.error("Failed to validate Schema. Reference Schema is invalid");
+                Assert.fail("Failed to validate Schema. Reference Schema is invalid");
+            } else {
+                logger.error("Failed to validate Schema due to Exception: " + e);
+                Assert.fail("Failed to validate Schema due to Exception: " + e);
+            }
+        }
+        logger.info("Response Schema verified successfully.");
     }
 
     /**
@@ -998,7 +1105,7 @@ public class CommonFunctions {
      * @param responseKey Key name of the request associated with this response
      */
     public static void verifyResponseSchema(String schemaName, String responseKey) {
-        if (!reqSpecMap.containsKey(responseKey)) {
+        if (!responseMap.containsKey(responseKey)) {
             logger.error("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
         }
@@ -1023,33 +1130,15 @@ public class CommonFunctions {
         logger.info("Response Schema verified successfully.");
     }
 
-    /**
-     * Verifies whether the latest response matches the specified JSON Schema
-     *
-     * @param schemaName Name of the Schema which is to be referred to for comparison. Must be in the src\test\resources\schemas directory.
-     */
-    public static void verifyResponseSchema(String schemaName) {
-        Response res = responseMap.get(latestResponse);
-        try {
-            res.then().assertThat().body(JsonSchemaValidator.matchesJsonSchema(new File(System.getProperty("user.dir") + "\\src\\test\\resources\\schemas\\" + schemaName + ".json")));
-        } catch (Exception e) {
-            if (e.getMessage().contains("JsonMappingException") || e.getMessage().contains("IOException")) {
-                logger.error("Failed to validate Schema. Body may not match expectations. Exception: " + e.getMessage());
-                Assert.fail("Failed to validate Schema. Body may not match expectations. Exception: " + e.getMessage());
-            } else if (e.getMessage().contains("FileNotFoundException")) {
-                logger.error("Failed to validate Schema. Could not find the reference Schema");
-                Assert.fail("Failed to validate Schema. Could not find the reference Schema");
-            } else if (e.getMessage().contains("JsonParseException")) {
-                logger.error("Failed to validate Schema. Reference Schema is invalid");
-                Assert.fail("Failed to validate Schema. Reference Schema is invalid");
-            } else {
-                logger.error("Failed to validate Schema due to Exception: " + e);
-                Assert.fail("Failed to validate Schema due to Exception: " + e);
-            }
-        }
-        logger.info("Response Schema verified successfully.");
-    }
 
+    /**
+     * Toggles URL Encoding for the latest RequestSpecification
+     *
+     * @param encodingStatus Toggle to set encoding on or off.
+     */
+    public static void setUrlEncoding(boolean encodingStatus) {
+        reqSpecMap.get(latestResponseKey).urlEncodingEnabled(encodingStatus);
+    }
 
     /**
      * Toggles URL Encoding for the specified RequestSpecification
@@ -1067,19 +1156,10 @@ public class CommonFunctions {
     }
 
     /**
-     * Toggles URL Encoding for the latest RequestSpecification
-     *
-     * @param encodingStatus Toggle to set encoding on or off.
-     */
-    public static void setUrlEncoding(boolean encodingStatus) {
-        reqSpecMap.get(latestResponse).urlEncodingEnabled(encodingStatus);
-    }
-
-    /**
      * Configures the latest RequestSpecification to use relaxed HTTP validation
      */
     public static void setRelaxedHttpsValidation() {
-        reqSpecMap.get(latestResponse).relaxedHTTPSValidation();
+        reqSpecMap.get(latestResponseKey).relaxedHTTPSValidation();
     }
 
     /**
@@ -1097,7 +1177,7 @@ public class CommonFunctions {
     }
 
     /**
-     * Adds a file to be uploaded. Also sets the contentType of the active request to "multipart/form-data" automatically
+     * Adds a file to be uploaded. Also sets the contentType of the latest request to "multipart/form-data" automatically
      * <p>
      * MIME type is auto-set
      *
@@ -1110,7 +1190,7 @@ public class CommonFunctions {
             Assert.fail("No File extension detected. Please provide filename with extension");
         }
         File file = new File("src/test/resources/multipartfiles/" + filename);
-        reqSpecMap.get(latestResponse).multiPart(controlName, file);
+        reqSpecMap.get(latestResponseKey).multiPart(controlName, file);
     }
 
     /**
@@ -1138,7 +1218,7 @@ public class CommonFunctions {
     }
 
     /**
-     * Adds a file to be uploaded. Also sets the contentType of the active request to "multipart/form-data" automatically
+     * Adds a file to be uploaded. Also sets the contentType of the latest request to "multipart/form-data" automatically
      * <p>Sets the MIME type according to the parameter passed
      *
      * @param controlName Control Name of the file to be uploaded
@@ -1151,7 +1231,7 @@ public class CommonFunctions {
             Assert.fail("No File extension detected. Please provide filename with extension");
         }
         File file = new File("src/test/resources/multipartfiles/" + filename);
-        reqSpecMap.get(latestResponse).multiPart(controlName, file, mimeType);
+        reqSpecMap.get(latestResponseKey).multiPart(controlName, file, mimeType);
     }
 
     /**
@@ -1179,25 +1259,22 @@ public class CommonFunctions {
     }
 
     /**
-     * Passes the request Body from json file,file contains all the request body
-     * from which particular body is fetched on the basis on passed key
+     * Reads the Json.Request directory for an environment specific Body file and extracts the desired body based on the passed key
      *
      * @param key         Key of the particular json body which will be passed as a request
      * @param environment Data is fetched from files based on the environment
      */
     public static String jsonBody(String key, String environment) {
-        String fileName = null;
-        if ("local".equals(environment)) {
-            fileName = "local_data.json";
-        } else if ("integ".equals(environment)) {
-            fileName = "integ_data.json";
-        } else {
-            logger.info("Unknown environment: " + environment);
-        }
-
+        String fileName = environment + "_data.json";
         try {
-            String fullPath = System.getProperty("user.dir") + "//src//test//resources//Json//Request//" + fileName;
-            String jsonContent = new String(Files.readAllBytes(Paths.get(fullPath)));
+            String fullPath = System.getProperty("user.dir") + "//src//test//resources//requestbodies//" + fileName;
+            String jsonContent = null;
+            try {
+                jsonContent = new String(Files.readAllBytes(Paths.get(fullPath)));
+            } catch (Exception e) {
+                logger.info("Unknown environment: " + environment);
+                Assert.fail("Unknown environment: " + environment);
+            }
 
             //Deserialization and Serialization both actions are performed here
 
@@ -1219,39 +1296,26 @@ public class CommonFunctions {
     }
 
     /**
-     * Passes the request Body from json file,file contains all the request body
-     * from which particular body is fetched on the basis on passed key
+     * Reads the Json.Request directory for an environment specific Body file and extracts the desired body based on the passed key
+     * Then, adds values extracted from other responses to specified JsonPaths
+     * <p>This function is used when the request body of one request depends on the response of another</p>
      *
      * @param key         Key of the particular json body which will be passed as a request
      * @param environment Data is fetched from files based on the environment
-     * @param keyToAdd    Key whose values is fetched from another response and needs to be added in the body of new request
+     * @param newKeyPath  The Json Path of the new key that is to be added
+     * @param keyToAdd    The key whose value is fetched from another response and needs to be added in the body of new request
      */
-
-    public static String jsonBody(String key, String environment, String keyToAdd) {
+    public static String jsonBody(String key, String environment, String newKeyPath, String keyToAdd) {
         String fileName = environment.toLowerCase() + "_data.json";
         try {
-            String fullPath = System.getProperty("user.dir") + "//src//test//resources//Json//Request//" + fileName;
+            String fullPath = System.getProperty("user.dir") + "//src//test//resources//requestbodies//" + fileName;
             String jsonContent = new String(Files.readAllBytes(Paths.get(fullPath)));
-
-            //Deserialization and Serialization both actions are performed here
-            ObjectMapper objectMapper = new ObjectMapper();
-            Map<String, Object> jsonData = objectMapper.readValue(jsonContent, new TypeReference<>() {
-            });
-
-            if (jsonData.containsKey(key)) {
-                Object selectedJsonObject = jsonData.get(key);
-                // Cast the selectedJsonObject to a Map
-                if (selectedJsonObject instanceof Map) {
-                    Map<String, Object> selectedMap = (Map<String, Object>) selectedJsonObject;
-                    // Add the new key-value pair
-                    selectedMap.put(keyToAdd, extractedValue.get(key));
-                    return objectMapper.writeValueAsString(selectedJsonObject);
-                } else {
-                    throw new IllegalArgumentException("Selected JSON object is not a valid Map");
-                }
-            } else {
-                throw new IllegalArgumentException("JSON object with key '" + key + "' not found in the JSON file");
-            }
+            JSONObject parentObject = new JSONObject(jsonContent);
+            JSONObject jsonObject = parentObject.getJSONObject(key);
+            Configuration conf = Configuration.defaultConfiguration().addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL).addOptions(Option.SUPPRESS_EXCEPTIONS);
+            DocumentContext documentContext = com.jayway.jsonpath.JsonPath.using(conf).parse(jsonObject.toString(2));
+            documentContext.set(com.jayway.jsonpath.JsonPath.compile(newKeyPath), extractedValue.get(keyToAdd));
+            return documentContext.jsonString();
         } catch (IOException e) {
             logger.error("No such file found in directory: " + fileName);
             Assert.fail("No such file found in directory: " + fileName);
@@ -1259,29 +1323,49 @@ public class CommonFunctions {
         }
     }
 
+
     /**
-     * Adds basic authentication to the request
+     * Adds basic authentication to the latest request
      * Fetches credentials from serenity.conf file
      */
     public static void addBasicAuth() {
         String username = EnvironmentSpecificConfiguration.from(variables).getProperty("username");
         String password = new String(Base64.decode(Unpooled.wrappedBuffer(EnvironmentSpecificConfiguration.from(variables).getProperty("password").getBytes())).array());
-        requestSpecification.auth().basic(username, password);
+        reqSpecMap.get(latestResponseKey).auth().basic(username, password);
     }
 
     /**
-     * Adds bearer authentication to the request
+     * Adds basic authentication to the specified request
      * Fetches credentials from serenity.conf file
+     */
+    public static void addBasicAuth(String requestKey) {
+        String username = EnvironmentSpecificConfiguration.from(variables).getProperty("username");
+        String password = new String(Base64.decode(Unpooled.wrappedBuffer(EnvironmentSpecificConfiguration.from(variables).getProperty("password").getBytes())).array());
+        reqSpecMap.get(requestKey).auth().basic(username, password);
+    }
+
+    /**
+     * Adds bearer authentication to the latest request
+     * Fetches Bearer token from serenity.conf file
      */
     public static void addBearerAuth() {
         String token = UtilStepDefinition.generateAccessToken();
         // The above function can be modified to generate a Bearer token. Modify the input parameters accordingly, and comment out the next line.
-        requestSpecification.headers("Authorization", "Bearer " + token);
+        reqSpecMap.get(latestResponseKey).headers("Authorization", "Bearer " + token);
+    }
+
+    /**
+     * Adds bearer authentication to the latest request
+     * Fetches Bearer token from serenity.conf file
+     */
+    public static void addBearerAuth(String requestKey) {
+        String token = UtilStepDefinition.generateAccessToken();
+        // The above function can be modified to generate a Bearer token. Modify the input parameters accordingly, and comment out the next line.
+        reqSpecMap.get(requestKey).headers("Authorization", "Bearer " + token);
     }
 
     /**
      * Clears the Request Specification Hashmap
-     * A new hashmap gets initialized to reqSpecMap
      */
     public void clearRequests() {
         reqSpecMap = new HashMap<>();
@@ -1289,25 +1373,24 @@ public class CommonFunctions {
 
     /**
      * Clears the Response Hashmap
-     * A new hashmap gets initialized to responseMap
      */
     public void clearResponses() {
         responseMap = new HashMap<>();
     }
 
     /**
-     * Removes a specific key from Request Specification Map
+     * Removes a specific request from memory
      *
-     * @param key Key that needs to be removed from map
+     * @param key Request Key that needs to be removed from memory
      */
     public void clearRequest(String key) {
         reqSpecMap.remove(key);
     }
 
     /**
-     * Removes a specific key from Response Map
+     * Removes a specific response from memory
      *
-     * @param key Key that needs to be removed from map
+     * @param key Response Key that needs to be removed from memory
      */
     public void clearResponse(String key) {
         responseMap.remove(key);
@@ -1373,7 +1456,7 @@ public class CommonFunctions {
         } else if (expJson instanceof JSONArray && respJson instanceof JSONArray) {
             type = "array";
         } else {
-            Assert.assertFalse("Both JSONs are not of same type", true);
+            Assert.fail("Both JSONs are not of same type");
         }
 
         return type;
@@ -1578,13 +1661,13 @@ public class CommonFunctions {
                         String compListType = getType(comparisonList.get(i));
 
                         //if the type is same then values differ
+                        String comm;
                         if (listObjType.equalsIgnoreCase(compListType)) {
-                            String comm = "Value Mismatch for <" + i + "> index in the list. Expected: <" + comparisonList.get(i) + "> | Observed: <" + listObj + ">";
-                            mismatchComments.add(comm);
+                            comm = "Value Mismatch for <" + i + "> index in the list. Expected: <" + comparisonList.get(i) + "> | Observed: <" + listObj + ">";
                         } else {
-                            String comm = "Type Mismatch for <" + i + "> index in the list. Expected: <" + compListType + "> type value | Observed: <" + listObjType + "> type value";
-                            mismatchComments.add(comm);
+                            comm = "Type Mismatch for <" + i + "> index in the list. Expected: <" + compListType + "> type value | Observed: <" + listObjType + "> type value";
                         }
+                        mismatchComments.add(comm);
                     }
                     //concatenate the mismatches in result
                     if (!mismatchInJson1Values.isEmpty() && !mismatchInJson2Values.isEmpty()) {
@@ -1600,13 +1683,13 @@ public class CommonFunctions {
                 if (!comparisonList.get(i).equals(listToCompare.get(i))) {
                     String listObjType = getType(listToCompare.get(i));
                     String compListType = getType(comparisonList.get(i));
+                    String comm;
                     if (listObjType.equalsIgnoreCase(compListType)) {
-                        String comm = "Value Mismatch for <" + i + "> index in the list. Expected: <" + comparisonList.get(i) + "> | Observed: <" + listToCompare.get(i) + ">";
-                        mismatchComments.add(comm);
+                        comm = "Value Mismatch for <" + i + "> index in the list. Expected: <" + comparisonList.get(i) + "> | Observed: <" + listToCompare.get(i) + ">";
                     } else {
-                        String comm = "Type Mismatch for <" + i + "> index in the list. Expected: <" + compListType + "> type value | Observed: <" + listObjType + "> type value";
-                        mismatchComments.add(comm);
+                        comm = "Type Mismatch for <" + i + "> index in the list. Expected: <" + compListType + "> type value | Observed: <" + listObjType + "> type value";
                     }
+                    mismatchComments.add(comm);
                 }
                 i++;
                 j++;
@@ -1668,13 +1751,13 @@ public class CommonFunctions {
                 String expectedType = getType(exValue);
                 String resultType = getType(resValue);
                 //2a => if the value 'type' is same but value are diff
+                String comm;
                 if (expectedType.equalsIgnoreCase(resultType)) {
-                    String comm = "Value Mismatch for key <" + currKey + ">. Expected: <" + exValue + "> | Observed: <" + resValue + ">";
-                    mismatchComments.add(comm);
+                    comm = "Value Mismatch for key <" + currKey + ">. Expected: <" + exValue + "> | Observed: <" + resValue + ">";
                 } else {
-                    String comm = "Type Mismatch for key <" + currKey + ">. Expected: <" + expectedType + "> type value | Observed: <" + resultType + "> type value";
-                    mismatchComments.add(comm);
+                    comm = "Type Mismatch for key <" + currKey + ">. Expected: <" + expectedType + "> type value | Observed: <" + resultType + "> type value";
                 }
+                mismatchComments.add(comm);
             }
             if (!mismatchInJson1Values.isEmpty() && !mismatchInJson2Values.isEmpty()) {
                 mismatchedFinal.put("missingValuesInExpectedJSON", mismatchInJson1Values);
@@ -1792,7 +1875,7 @@ public class CommonFunctions {
      * @param jsonObj JsonObject to be converted into Map
      */
     public static Map<String, Object> toMap(JSONObject jsonObj) throws JSONException {
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
 
         //iterating through the keys of passed json object
         Iterator<String> keys = jsonObj.keys();
@@ -1820,7 +1903,7 @@ public class CommonFunctions {
      * @param jsonArray JsonArray to be converted into list
      */
     public static List<Object> toList(JSONArray jsonArray) throws JSONException {
-        List<Object> list = new ArrayList<Object>();
+        List<Object> list = new ArrayList<>();
         //for each value in the list
         for (int i = 0; i < jsonArray.length(); i++) {
             Object value = jsonArray.get(i);
@@ -1841,24 +1924,3 @@ public class CommonFunctions {
 
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

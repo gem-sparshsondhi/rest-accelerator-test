@@ -1,26 +1,38 @@
-
+@Demo1
 Feature: Test
 
   @Get
   Scenario:GET Request
     Given user creates a new request named "getSingleUser" request and sets "read" as endpoint
     When user makes a "GET" request
+    Then user verifies "200" status code
     Then user verifies state of key-value in response body
-      | Key             | operation    | Value                   |
-      | data.first_name | equals       | Janet                   |
-      | data.first_name | not equals   | Janeta                  |
-      | data.email      | contains     | janet.weaver@reqres.in  |
-      | data.email      | not contains | janeta.weaver@reqres.in |
-    When user extracts value from "data.email" response
+      | Key             | operation    | Value                  |
+      | data.first_name | equals       | Janet                  |
+      | data.first_name | not equals   | Janeta                 |
+      | data.email      | contains     | janet.weaver@reqres.in |
+      | data.email      | not contains | janeta                 |
+    When user extracts the following keys from response
+      | Key Path   |
+      | data.email |
 
-  @PostPutPatch @Samples
+    Given user creates a new request named "PostData" request and sets "create" as endpoint
+    When user adds headers to "PostData" request
+      | Header Name | Header Value |
+      | Accept      | */*          |
+    When user adds extracted value of key "data.email" at "email" path in "POSTReqBody" request body
+    When user makes "POST" request for "PostData" request
+    Then user verifies "201" status code
+
+
+  @PostPutPatch @Samples @Get
   Scenario:Multiple Requests
     Given user creates a new request named "PostData" request and sets "create" as endpoint
     When user adds headers to "PostData" request
       | Header Name | Header Value |
       | Accept      | */*          |
+    When user adds extracted value of key "data.email" at "email" path in "POSTReqBody" request body
     When user adds "POSTReqBody" body to "PostData" request
-    When user adds extracted value of key "data.email" in "POSTReqBody" request body
     When user makes "POST" request for "PostData" request
     Then user verifies "201" status code
 
@@ -29,15 +41,14 @@ Feature: Test
     When user makes "PUT" request for "PutData" request
     Then user verifies response code as "200" for "PutData" response
 
-
-#    Given user creates a new request named "PatchData" request and sets "patch" as endpoint
-#    When user adds headers to "PatchData" request
-#      | Header Name  | Header Value |
-#      | Accept       | */*          |
-#      | Content-Type | text/plain   |
-#    When user adds "PATCHReqBody" body to "PatchData" request
-#    When user makes "PATCH" request for "PatchData" request
-#    Then user verifies "200" status code
+    Given user creates a new request named "PatchData" request and sets "patch" as endpoint
+    When user adds headers to "PatchData" request
+      | Header Name  | Header Value |
+      | Accept       | */*          |
+      | Content-Type | text/plain   |
+    When user adds "PATCHReqBody" body to "PatchData" request
+    When user makes "PATCH" request for "PatchData" request
+    Then user verifies "200" status code
 
   @Delete
   Scenario:DELETE Request
