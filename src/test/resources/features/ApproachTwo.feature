@@ -1,8 +1,8 @@
-@Demo2
-Feature: Extra User friendly scenarios
+@Demo
+Feature: Sample Simplified Scenarios
 
-  @newScenario
-  Scenario: Get data and extract a value
+  @SimpleScenario1
+  Scenario: Simple Scenario 1
     Given user creates a request
     When user hit a GET request
     Then user does status code validation
@@ -12,16 +12,18 @@ Feature: Extra User friendly scenarios
       | data.first_name | not equals   | Janeta                  |
       | data.email      | contains     | janet.weaver@reqres.in  |
       | data.email      | not contains | janeta.weaver@reqres.in |
-
-  @newScenario2
-  Scenario: Modify Request body and make two requests
+    Then user extracts key from response
     Given user creates a request with body
+    When user adds extracted value from response to request body
+    Then user hit a POST request and validates status code
+
+  @SimpleScenario2
+  Scenario: Simple Scenario 2
+    Given user creates a new request with body
     When user hit a POST request
-    Then user extracts value from response
     And user validates status code for POST request
-    Given user creates another request with premade body after adding extracted data
-    When user hits PUT request
-    Then user validates status code for PUT request
+    Given user creates a PUT request with body
+    When user hits PUT request and verifies status code
 
 
 

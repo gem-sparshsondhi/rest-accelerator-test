@@ -20,7 +20,7 @@ public class UtilStepDefinition extends CommonFunctions {
         resetVariables();
     }
 
-    @Given("^user creates a new request named \"(.*)\" request and sets \"(.*)\" as endpoint$")
+    @Given("^user creates a new request named \"(.*)\" and sets \"(.*)\" as endpoint$")
     public void createNewRequestAndSetEndpoint(String key, String endpoint) {
         userCreatesRequest(key, endpoint);
     }
@@ -55,18 +55,18 @@ public class UtilStepDefinition extends CommonFunctions {
         addHeaders(requestKey, dt);
     }
 
-    @When("^user add headers name \"(.*)\" and header value \"(.*)\" to the request$")
+    @When("^user adds header named \"(.*)\" with value \"(.*)\" to the request$")
     public void userPassHeadersAsString(String headerName, String headerValue) {
         addHeaders(headerName, headerValue);
     }
 
-    @When("^user adds header name \"(.*)\" and header value \"(.*)\" for \"(.*)\" request$")
+    @When("^user adds header named \"(.*)\" with value \"(.*)\" for \"(.*)\" request$")
     public void userPassHeadersAsString(String requestKey, String headerName, String headerValue) {
         addHeaders(requestKey, headerName, headerValue);
 
     }
 
-    @When("^user add headers as map to the request$")
+    @When("^user adds headers as map to the request$")
     public void userAddHeaders() {
         // Multiple headers can also be added in the form of a HashMap
         Map<String, String> headers = new HashMap<>();
@@ -77,7 +77,7 @@ public class UtilStepDefinition extends CommonFunctions {
         addHeadersViaMap("requestOne", headers);  // Can be used to add the headers to the specified request (Here "requestOne")
     }
 
-    @When("^user add headers as map for \"(.*)\" request$")
+    @When("^user adds headers as map for \"(.*)\" request$")
     public void userAddHeadersAsMapForRequest(String requestKey) {
         // Multiple headers can also be added in the form of a HashMap
         Map<String, String> headers = new HashMap<>();
@@ -87,7 +87,7 @@ public class UtilStepDefinition extends CommonFunctions {
         addHeadersViaMap(requestKey, headers);  // Can be used to add the headers to the specified request (Here "requestOne")
     }
 
-    @When("^user add Query Param as map for \"(.*)\" request$")
+    @When("^user adds Query Param as map for \"(.*)\" request$")
     public void userAddQueryParamAsMapForRequest(String requestKey) {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("Key1", "Value");
@@ -105,7 +105,7 @@ public class UtilStepDefinition extends CommonFunctions {
         addQueryParamsViaMap(queryParams);
     }
 
-    @When("^user add Path Param as map for \"(.*)\" request$")
+    @When("^user adds Path Param as map for \"(.*)\" request$")
     public void userAddPathParamAsMapForRequest(String requestKey) {
         Map<String, String> pathParams = new HashMap<>();
         pathParams.put("Key1", "Value");
@@ -123,7 +123,7 @@ public class UtilStepDefinition extends CommonFunctions {
         addPathParamsViaMap(pathParams);
     }
 
-    @When("^user add Form Param as map for \"(.*)\" request$")
+    @When("^user adds Form Param as map for \"(.*)\" request$")
     public void userAddFormParamAsMapForRequest(String requestKey) {
         Map<String, String> formParams = new HashMap<>();
         formParams.put("Key1", "Value");
@@ -141,7 +141,7 @@ public class UtilStepDefinition extends CommonFunctions {
         addFormParamsViaMap(formParams);
     }
 
-    @And("^user add Query Params to \"(.*)\" request$")
+    @And("^user adds Query Params to \"(.*)\" request$")
     public void addQueryParamsToRequest(String requestKey, DataTable dataTable) {
         addQueryParams(requestKey, dataTable);
     }
@@ -149,6 +149,56 @@ public class UtilStepDefinition extends CommonFunctions {
     @And("^user adds Query Params to the request$")
     public void addQueryParamsToRequest(DataTable dataTable) {
         addQueryParams(dataTable);
+    }
+
+    @When("^user adds Query Parameter named \"(.*)\" with value \"(.*)\" to the request$")
+    public void userAddQueryParams(String key, String value) {
+        addQueryParams(key, value);
+    }
+
+    @And("^user adds form parameters$")
+    public void userAddsFormParameters(DataTable dataTable) {
+        addFormParams(dataTable);
+    }
+
+    @And("^user adds form parameters to \"(.*)\" request$")
+    public void userAddsFormParametersToRequest(String requestKey, DataTable dataTable) {
+        addFormParams(requestKey, dataTable);
+    }
+
+    @And("^user adds path parameters$")
+    public void userAddsPathParameters(DataTable dataTable) {
+        addPathParams(dataTable);
+    }
+
+    @And("^user adds path parameters to \"(.*)\" request$")
+    public void userAddPathParametersToRequest(String requestKey, DataTable dataTable) {
+        addPathParams(requestKey, dataTable);
+    }
+
+    @When("^user adds Query Parameter named \"(.*)\" with value \"(.*)\" to \"(.*)\" request$")
+    public void userAddQueryParams(String key, String value, String requestKey) {
+        addQueryParams(requestKey, key, value);
+    }
+
+    @When("^user adds Path Parameter named \"(.*)\" with value \"(.*)\" to \"(.*)\" request$")
+    public void userAddPathParams(String key, String value, String requestKey) {
+        addPathParams(requestKey, key, value);
+    }
+
+    @When("^user adds Form Parameter named \"(.*)\" with value \"(.*)\" to \"(.*)\" request$")
+    public void userAddFormParams(String key, String value, String requestKey) {
+        addFormParams(requestKey, key, value);
+    }
+
+    @When("^user adds Form Parameter named \"(.*)\" with value \"(.*)\" to the request$")
+    public void userAddFormParams(String key, String value) {
+        addFormParams(key, value);
+    }
+
+    @When("^user adds Path Parameter named \"(.*)\" with value \"(.*)\" to the request$")
+    public void userAddPathParams(String key, String value) {
+        addPathParams(key, value);
     }
 
     @And("^user verifies the response matches \"(.*)\" schema for \"(.*)\" response$")
@@ -180,6 +230,7 @@ public class UtilStepDefinition extends CommonFunctions {
     public void addMultipartFileWithControlNameAndMIMEType(String fileName, String controlName, String mimeType) {
         addMultipartFileToRequestWithMIMEType(fileName, controlName, mimeType);
     }
+
 
     @And("^user adds multipart file \"(.*)\" with \"(.*)\" control name and \"(.*)\" MIME type to \"(.*)\" request$")
     public void addMultipartFileWithControlNameAndMIMEType(String fileName, String controlName, String mimeType, String requestKey) {
@@ -266,7 +317,6 @@ public class UtilStepDefinition extends CommonFunctions {
         verifyJsonArraySize(keyName, size, responseKey);
     }
 
-
     @Then("^user clears all requests$")
     public void clearAllRequests() {
         clearRequests();
@@ -297,14 +347,35 @@ public class UtilStepDefinition extends CommonFunctions {
         userAddsBody(methodBody, keyName);
     }
 
-    @Then("^user extracts value from \"(.*)\" response$")
+    @Then("^user extracts \"(.*)\" from response$")
     public void userExtractsValueFromFromResponse(String key) {
         extractValue(key);
+    }
+
+    @When("^user extracts \"(.*)\" from \"(.*)\" response")
+    public void userExtractsFromResponse(String extractedKey, String requestKey) {
+        extractValue(extractedKey, requestKey);
+    }
+
+    @When("^user extracts the following keys from response")
+    public void userExtractsTheFollowingKeysFromResponse(DataTable dt) {
+        extractValues(dt);
+    }
+
+    @When("^user extracts the following keys from \"(.*)\" response")
+    public void userExtractsTheFollowingKeysFromResponse(DataTable dataTable, String requestKey) {
+        extractValues(dataTable, requestKey);
     }
 
     @Then("^user adds extracted value of key \"(.*)\" at \"(.*?)\" path in \"(.*)\" request body$")
     public void userAddsExtractedKeyInBody(String extractedKey, String pathToSet, String methodBody) {
         addExtractedValueFromResponseToARequest(extractedKey, pathToSet, methodBody);
+    }
+
+    @When("^user adds extracted value of key \"(.*)\" at \"(.*)\" path in \"(.*)\" request body of \"(.*)\" request$")
+    public void userAddsExtractedValueOfKeyAtPathInRequestBodyOfRequest(String extractedKey, String pathToSet, String methodBody, String requestKey) {
+        addExtractedValueFromResponseToARequest(extractedKey, pathToSet, methodBody, requestKey);
+
     }
 
     @Then("^user verifies state of key-value in response body$")
@@ -322,53 +393,16 @@ public class UtilStepDefinition extends CommonFunctions {
         addBearerAuth();
     }
 
-    @And("^user adds form parameters$")
-    public void userAddsFormParameters(DataTable dataTable) {
-        addFormParams(dataTable);
+
+    @When("^user compares response \"(.*?)\" with \"(.*?)\" response using JSON Comparator$")
+    public void performJsonComparison(String responseKey1, String responseKey2) throws IOException {
+        performComparison(responseKey1, responseKey2);
     }
 
-    @And("^user add form parameters to \"(.*)\" request$")
-    public void userAddsFormParametersToRequest(String requestKey, DataTable dataTable) {
-        addFormParams(requestKey, dataTable);
-    }
-
-    @And("^user adds path parameters$")
-    public void userAddsPathParameters(DataTable dataTable) {
-        addPathParams(dataTable);
-    }
-
-    @And("^user add path parameters to \"(.*)\" request$")
-    public void userAddPathParametersToRequest(String requestKey, DataTable dataTable) {
-        addPathParams(requestKey, dataTable);
-    }
-
-    @When("^user add Query Params$")
-    public void userAddQueryParams() {
-        addQueryParams("Key", "Value");
-        addQueryParams("requestOne", "Key", "Value");
-    }
-
-    @When("^user add Form Params$")
-    public void userAddFormParams() {
-        addFormParams("Key", "Value");
-        addFormParams("requestOne", "Key", "Value");
-    }
-
-    @When("^user add Path Params$")
-    public void userAddPathParams() {
-        addPathParams("Key", "Value");
-        addPathParams("requestOne", "Key", "Value");
-    }
-
-    public static String generateAccessToken() {
+    public static String generateBearerToken() {
         String authToken;
         // Implement logic here to generate the access token. Modify the input parameters accordingly
         authToken = EnvironmentSpecificConfiguration.from(SystemEnvironmentVariables.createEnvironmentVariables()).getProperty("accessToken");
         return authToken;
-    }
-
-    @When("^user perform Json comparison$")
-    public void performJsonComparison() throws IOException {
-        performComparison();
     }
 }
