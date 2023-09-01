@@ -35,6 +35,7 @@ public class ApproachTwo extends CommonFunctions {
         verifyKeyValueInResponseBody(dataTable);
     }
 
+
     @Given("^user creates a request with body$")
     public void userCreatesARequestWithBody() {
         userCreatesRequest("PostData", "create");
@@ -57,6 +58,7 @@ public class ApproachTwo extends CommonFunctions {
         userHitsRequest("POST", "PostData");
         verifyStatusCode(201);
     }
+
 
     @Given("user creates a new request with body")
     public void userCreatesANewRequestWithBody() {

@@ -20,7 +20,7 @@ public class UtilStepDefinition extends CommonFunctions {
         resetVariables();
     }
 
-    @Given("^user creates a new request named \"(.*)\" and sets \"(.*)\" as endpoint$")
+    @Given("^user creates a new request named \"(.*)\" request and sets \"(.*)\" as endpoint$")
     public void createNewRequestAndSetEndpoint(String key, String endpoint) {
         userCreatesRequest(key, endpoint);
     }
@@ -55,18 +55,18 @@ public class UtilStepDefinition extends CommonFunctions {
         addHeaders(requestKey, dt);
     }
 
-    @When("^user adds header named \"(.*)\" with value \"(.*)\" to the request$")
+    @When("^user add headers name \"(.*)\" and header value \"(.*)\" to the request$")
     public void userPassHeadersAsString(String headerName, String headerValue) {
         addHeaders(headerName, headerValue);
     }
 
-    @When("^user adds header named \"(.*)\" with value \"(.*)\" for \"(.*)\" request$")
+    @When("^user adds header name \"(.*)\" and header value \"(.*)\" for \"(.*)\" request$")
     public void userPassHeadersAsString(String requestKey, String headerName, String headerValue) {
         addHeaders(requestKey, headerName, headerValue);
 
     }
 
-    @When("^user adds headers as map to the request$")
+    @When("^user add headers as map to the request$")
     public void userAddHeaders() {
         // Multiple headers can also be added in the form of a HashMap
         Map<String, String> headers = new HashMap<>();
@@ -77,7 +77,7 @@ public class UtilStepDefinition extends CommonFunctions {
         addHeadersViaMap("requestOne", headers);  // Can be used to add the headers to the specified request (Here "requestOne")
     }
 
-    @When("^user adds headers as map for \"(.*)\" request$")
+    @When("^user add headers as map for \"(.*)\" request$")
     public void userAddHeadersAsMapForRequest(String requestKey) {
         // Multiple headers can also be added in the form of a HashMap
         Map<String, String> headers = new HashMap<>();
@@ -87,7 +87,7 @@ public class UtilStepDefinition extends CommonFunctions {
         addHeadersViaMap(requestKey, headers);  // Can be used to add the headers to the specified request (Here "requestOne")
     }
 
-    @When("^user adds Query Param as map for \"(.*)\" request$")
+    @When("^user add Query Param as map for \"(.*)\" request$")
     public void userAddQueryParamAsMapForRequest(String requestKey) {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("Key1", "Value");
@@ -105,7 +105,7 @@ public class UtilStepDefinition extends CommonFunctions {
         addQueryParamsViaMap(queryParams);
     }
 
-    @When("^user adds Path Param as map for \"(.*)\" request$")
+    @When("^user add Path Param as map for \"(.*)\" request$")
     public void userAddPathParamAsMapForRequest(String requestKey) {
         Map<String, String> pathParams = new HashMap<>();
         pathParams.put("Key1", "Value");
@@ -123,7 +123,7 @@ public class UtilStepDefinition extends CommonFunctions {
         addPathParamsViaMap(pathParams);
     }
 
-    @When("^user adds Form Param as map for \"(.*)\" request$")
+    @When("^user add Form Param as map for \"(.*)\" request$")
     public void userAddFormParamAsMapForRequest(String requestKey) {
         Map<String, String> formParams = new HashMap<>();
         formParams.put("Key1", "Value");
@@ -141,7 +141,7 @@ public class UtilStepDefinition extends CommonFunctions {
         addFormParamsViaMap(formParams);
     }
 
-    @And("^user adds Query Params to \"(.*)\" request$")
+    @And("^user add Query Params to \"(.*)\" request$")
     public void addQueryParamsToRequest(String requestKey, DataTable dataTable) {
         addQueryParams(requestKey, dataTable);
     }
@@ -151,7 +151,7 @@ public class UtilStepDefinition extends CommonFunctions {
         addQueryParams(dataTable);
     }
 
-    @When("^user adds Query Parameter named \"(.*)\" with value \"(.*)\" to the request$")
+    @When("^user add Query Param key \"(.*)\" and param value \"(.*)\" to the request$")
     public void userAddQueryParams(String key, String value) {
         addQueryParams(key, value);
     }
@@ -161,7 +161,7 @@ public class UtilStepDefinition extends CommonFunctions {
         addFormParams(dataTable);
     }
 
-    @And("^user adds form parameters to \"(.*)\" request$")
+    @And("^user add form parameters to \"(.*)\" request$")
     public void userAddsFormParametersToRequest(String requestKey, DataTable dataTable) {
         addFormParams(requestKey, dataTable);
     }
@@ -171,32 +171,32 @@ public class UtilStepDefinition extends CommonFunctions {
         addPathParams(dataTable);
     }
 
-    @And("^user adds path parameters to \"(.*)\" request$")
+    @And("^user add path parameters to \"(.*)\" request$")
     public void userAddPathParametersToRequest(String requestKey, DataTable dataTable) {
         addPathParams(requestKey, dataTable);
     }
 
-    @When("^user adds Query Parameter named \"(.*)\" with value \"(.*)\" to \"(.*)\" request$")
+    @When("^user adds Query Param key \"(.*)\" and param value \"(.*)\" to \"(.*)\" request$")
     public void userAddQueryParams(String key, String value, String requestKey) {
         addQueryParams(requestKey, key, value);
     }
 
-    @When("^user adds Path Parameter named \"(.*)\" with value \"(.*)\" to \"(.*)\" request$")
+    @When("^user adds Path Param key \"(.*)\" and param value \"(.*)\" to \"(.*)\" request$")
     public void userAddPathParams(String key, String value, String requestKey) {
         addPathParams(requestKey, key, value);
     }
 
-    @When("^user adds Form Parameter named \"(.*)\" with value \"(.*)\" to \"(.*)\" request$")
+    @When("^user adds Form Param key \"(.*)\" and param value \"(.*)\" to \"(.*)\" request$")
     public void userAddFormParams(String key, String value, String requestKey) {
         addFormParams(requestKey, key, value);
     }
 
-    @When("^user adds Form Parameter named \"(.*)\" with value \"(.*)\" to the request$")
+    @When("^user add Form Param key \"(.*)\" and param value \"(.*)\" to the request$")
     public void userAddFormParams(String key, String value) {
         addFormParams(key, value);
     }
 
-    @When("^user adds Path Parameter named \"(.*)\" with value \"(.*)\" to the request$")
+    @When("^user add Path Param key \"(.*)\" and param value \"(.*)\" to the request$")
     public void userAddPathParams(String key, String value) {
         addPathParams(key, value);
     }
@@ -317,6 +317,7 @@ public class UtilStepDefinition extends CommonFunctions {
         verifyJsonArraySize(keyName, size, responseKey);
     }
 
+
     @Then("^user clears all requests$")
     public void clearAllRequests() {
         clearRequests();
@@ -394,12 +395,12 @@ public class UtilStepDefinition extends CommonFunctions {
     }
 
 
-    @When("^user compares response \"(.*?)\" with \"(.*?)\" response using JSON Comparator$")
-    public void performJsonComparison(String responseKey1, String responseKey2) throws IOException {
-        performComparison(responseKey1, responseKey2);
+    @When("^user perform Json comparison$")
+    public void performJsonComparison() throws IOException {
+        performComparison();
     }
 
-    public static String generateBearerToken() {
+    public static String generateAccessToken() {
         String authToken;
         // Implement logic here to generate the access token. Modify the input parameters accordingly
         authToken = EnvironmentSpecificConfiguration.from(SystemEnvironmentVariables.createEnvironmentVariables()).getProperty("accessToken");
