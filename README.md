@@ -10,11 +10,11 @@ This Rest Accelerator enables individuals with minimal familiarity in Rest Assur
 ## Screenshots
 Below is approach #1 Feature File:
 
-![Detailed Approach](https://geminisolutionsindpvtltd-my.sharepoint.com/:i:/g/personal/sparsh_sondhi_geminisolutions_com/EdLINcV255pFpGGpULDS45EBlfR3BbJPFDGzCA7GZjIWng?e=T5lczU)
+![Detailed Approach](src/test/resources/multipartfiles/DetailedApproach.PNG)
 
 Below is approach #2 Feature File:
 
-![Simplified Approach](https://geminisolutionsindpvtltd-my.sharepoint.com/:i:/g/personal/sparsh_sondhi_geminisolutions_com/ETJoqamqN6FAhaEk4QSdFOgBgJxwAKioMuqhOO1IJmFV0Q?e=ipHhcG)
+![Simplified Approach](src/test/resources/multipartfiles/SimplifiedApproach.PNG)
 
 
 ## Tech Stack
