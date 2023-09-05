@@ -93,6 +93,7 @@ public class CommonFunctions {
         if (!reqSpecMap.containsKey(key)) {
             latestResponseKey = key;
             reqSpecMap.put(key, reqSpec);
+
             loggerUtils.logInfo("Test");
             loggerUtilsTwo.logInfo("TestTwo");
         } else {
@@ -118,7 +119,6 @@ public class CommonFunctions {
             logger.info("Unsupported method: " + requestType);
         }
     }
-
 
     /**
      * Initiates a request based on the latest RequestSpecification.<p>
