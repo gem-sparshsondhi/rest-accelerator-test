@@ -1,5 +1,5 @@
-Request method:	PUT
-Request URI:	https://reqres.in/api/users/2
+Request method:	POST
+Request URI:	https://reqres.in/api/users
 Proxy:			<none>
 Request params:	<none>
 Query params:	<none>
@@ -10,23 +10,23 @@ Headers:		Accept=*/*
 Cookies:		<none>
 Multiparts:		<none>
 Body:
-{"name":"morpheus","job":"zion resident"}
-HTTP/1.1 200 OK
-Date: Wed, 23 Aug 2023 11:14:53 GMT
+{"surname":"David","name":"morpheus","job":"leader","email":"janet.weaver@reqres.in"}
+HTTP/1.1 201 Created
+Date: Tue, 05 Sep 2023 10:39:18 GMT
 Content-Type: application/json; charset=utf-8
-Content-Length: 40
+Content-Length: 51
 Connection: keep-alive
 X-Powered-By: Express
 Access-Control-Allow-Origin: *
-Etag: W/"28-n70fMbkys9GUwECGzW8jnh/ISpo"
+Etag: W/"33-bsLK0fA1ifNkSVfQ3Bb8KCBK760"
 Via: 1.1 vegur
 CF-Cache-Status: DYNAMIC
-Report-To: {"endpoints":[{"url":"https:\/\/a.nel.cloudflare.com\/report\/v3?s=K9XyHjydfItF0oL2dMBBMInJm0uJfzNGT3L1JLCk4vGD09e%2BzAyl25ukj7mnP46MAIYzCNHMv22%2BleAGK60yHqjkbeClfQaS50bQSx1DKjyRRDO7ahl1FqY3zg%3D%3D"}],"group":"cf-nel","max_age":604800}
+Report-To: {"endpoints":[{"url":"https:\/\/a.nel.cloudflare.com\/report\/v3?s=huvagA7%2B7wPWKSDUTZSQw1180zPa58JQlISQlPLFVMNQIds9Sqh7H%2BJ7r2ZWGWyLtTst8rgwERN73%2BsfunOs6C%2F5VaFqLgxCIl64g6f3ayeDXTE4cf9gWN6gvA%3D%3D"}],"group":"cf-nel","max_age":604800}
 NEL: {"success_fraction":0,"report_to":"cf-nel","max_age":604800}
-Vary: Accept-Encoding
 Server: cloudflare
-CF-RAY: 7fb2ef382a7cf3a1-BOM
+CF-RAY: 801dd8f8ef0b1bd6-BOM
 
 {
-    "updatedAt": "2023-08-23T11:14:53.044Z"
+    "id": "640",
+    "createdAt": "2023-09-05T10:39:18.110Z"
 }

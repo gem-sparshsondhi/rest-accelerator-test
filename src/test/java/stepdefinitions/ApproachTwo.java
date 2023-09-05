@@ -1,6 +1,6 @@
 package stepdefinitions;
 
-import Common.CommonFunctions;
+import common.CommonFunctions;
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -17,12 +17,12 @@ public class ApproachTwo extends CommonFunctions {
 
     @Given("^user creates a request$")
     public void userCreatesAUser() {
-        userCreatesRequest("getSingleUser", "read");
+        createsRequest("getSingleUser", "read");
     }
 
     @When("^user hit a GET request$")
     public void userHitAGETRequest() {
-        userHitsRequest("GET");
+        hitsRequest("GET");
     }
 
     @When("^user does status code validation$")
@@ -38,9 +38,9 @@ public class ApproachTwo extends CommonFunctions {
 
     @Given("^user creates a request with body$")
     public void userCreatesARequestWithBody() {
-        userCreatesRequest("PostData", "create");
+        createsRequest("PostData", "create");
         addHeaders("PostData", "Accept", "*/*");
-        userAddsBody("POSTReqBody", "PostData");
+        addsBody("POSTReqBody", "PostData");
     }
 
     @When("user extracts key from response")
@@ -50,26 +50,26 @@ public class ApproachTwo extends CommonFunctions {
 
     @Then("user adds extracted value from response to request body")
     public void userAddsExtractedValueFromResponseToRequestBody() {
-        addExtractedValueFromResponseToARequest("email", "email", "POSTReqBody");
+        addExtractedValueToRequest("email", "email", "POSTReqBody");
     }
 
     @When("user hit a POST request and validates status code")
     public void userHitAPOSTRequestAndValidatesStatusCode() {
-        userHitsRequest("POST", "PostData");
+        hitsRequest("POST", "PostData");
         verifyStatusCode(201);
     }
 
 
     @Given("user creates a new request with body")
     public void userCreatesANewRequestWithBody() {
-        userCreatesRequest("PostNewData", "create");
+        createsRequest("PostNewData", "create");
         addHeaders("PostNewData", "Accept", "*/*");
-        userAddsBody("POSTReqBody", "PostNewData");
+        addsBody("POSTReqBody", "PostNewData");
     }
 
     @And("^user hit a POST request$")
     public void userHitAPOSTRequest() {
-        userHitsRequest("POST", "PostNewData");
+        hitsRequest("POST", "PostNewData");
     }
 
     @Then("^user validates status code for POST request$")
@@ -79,12 +79,12 @@ public class ApproachTwo extends CommonFunctions {
 
     @Given("user creates a PUT request with body")
     public void userCreatesAPUTRequestWithBody() {
-        userCreatesRequest("PutData","update");
+        createsRequest("PutData", "update");
     }
 
     @Then("^user hits PUT request and verifies status code$")
     public void userValidatesStatusCodeForPUTRequest() {
-        userHitsRequest("PUT", "PutData");
+        hitsRequest("PUT", "PutData");
         verifyStatusCode(200, "PutData");
     }
 }

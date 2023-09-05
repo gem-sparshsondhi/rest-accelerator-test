@@ -1,4 +1,4 @@
-package Common;
+package common;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -17,6 +17,9 @@ import io.restassured.module.jsv.JsonSchemaValidator;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
+import logging.EnableJLCLogging;
+import logging.EnableSlf4jLogging;
+import logging.LoggerUtils;
 import net.serenitybdd.core.Serenity;
 import net.serenitybdd.core.environment.EnvironmentSpecificConfiguration;
 import net.serenitybdd.rest.SerenityRest;
@@ -39,6 +42,9 @@ import java.util.*;
 
 
 public class CommonFunctions {
+
+    private LoggerUtils loggerUtils = new EnableSlf4jLogging();
+    private LoggerUtils loggerUtilsTwo = new EnableJLCLogging();
 
     public static HashMap<String, RequestSpecification> reqSpecMap = new HashMap<>();
     public static HashMap<String, Response> responseMap = new HashMap<>();
@@ -82,11 +88,13 @@ public class CommonFunctions {
      * @param key      The key name with which the RequestSpecification is stored is mapped.
      * @param endpoint The complete endpoint which will be hit during request
      */
-    public void userCreatesRequest(String key, String endpoint) {
+    public void createsRequest(String key, String endpoint) {
         RequestSpecification reqSpec = SerenityRest.given().spec(requestSpecifications(endpoint));
         if (!reqSpecMap.containsKey(key)) {
             latestResponseKey = key;
             reqSpecMap.put(key, reqSpec);
+            loggerUtils.logInfo("Test");
+            loggerUtilsTwo.logInfo("TestTwo");
         } else {
             logger.error("A request with this key name already exists. Please rename either request. Request to be renamed: " + key);
             Assert.fail("A request with this key name already exists. Please rename either request. Request to be renamed: " + key);
@@ -99,7 +107,7 @@ public class CommonFunctions {
      *
      * @param requestType Request Method to be sent. Can be GET, POST, PUT, PATCH, DELETE
      */
-    public void userHitsRequest(String requestType) {
+    public void hitsRequest(String requestType) {
         requestType = requestType.toUpperCase();
         try {
             RequestSpecification requestSpec = reqSpecMap.get(latestResponseKey);
@@ -119,7 +127,7 @@ public class CommonFunctions {
      * @param requestType Request Method to be sent. Can be GET, POST, PUT, PATCH, DELETE
      * @param requestKey  Key name of the request associated with this response
      */
-    public void userHitsRequest(String requestType, String requestKey) {
+    public void hitsRequest(String requestType, String requestKey) {
         Response response = null;
         requestType = requestType.toUpperCase();
         try {
@@ -137,7 +145,7 @@ public class CommonFunctions {
      *
      * @param methodBody Key of the method body under which request body is stored in data.json file
      */
-    public void userAddsBody(String methodBody) {
+    public void addsBody(String methodBody) {
         reqSpecMap.get(latestResponseKey).log().all().when().body(jsonBody(methodBody, environment));
     }
 
@@ -147,7 +155,7 @@ public class CommonFunctions {
      * @param methodBody Key of the method body under which request body is stored in data.json file
      * @param requestKey Key name of the request associated with this response
      */
-    public void userAddsBody(String methodBody, String requestKey) {
+    public void addsBody(String methodBody, String requestKey) {
         if (!reqSpecMap.containsKey(requestKey)) {
             logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
@@ -177,7 +185,6 @@ public class CommonFunctions {
         }
         reqSpecMap.get(requestKey).contentType(contentType);
     }
-
 
     /**
      * Verifies if the status code of the latest response matches expectations
@@ -623,9 +630,10 @@ public class CommonFunctions {
      * @param methodBody Method body in which key needs to be added
      */
 
-    public void addExtractedValueFromResponseToARequest(String keyToAdd, String newKeyPath, String methodBody) {
-        reqSpecMap.get(latestResponseKey).log().all().when().body(jsonBody(methodBody, environment, newKeyPath, keyToAdd));
+    public void addExtractedValueToRequest(String keyToAdd, String newKeyPath, String methodBody) {
+        reqSpecMap.get(latestResponseKey).log().all().when().body(jsonBody(methodBody, environment, newKeyPath, keyToAdd, true));
     }
+
 
     /**
      * Adds the extracted key value from another response body to the request body the specified request
@@ -636,8 +644,8 @@ public class CommonFunctions {
      * @param methodBody Method body in which key needs to be added
      */
 
-    public void addExtractedValueFromResponseToARequest(String keyToAdd, String newKeyPath, String methodBody, String requestKey) {
-        reqSpecMap.get(requestKey).log().all().when().body(jsonBody(methodBody, environment, newKeyPath, keyToAdd));
+    public void addExtractedValueToRequest(String keyToAdd, String newKeyPath, String methodBody, String requestKey) {
+        reqSpecMap.get(requestKey).log().all().when().body(jsonBody(methodBody, environment, newKeyPath, keyToAdd, true));
     }
 
     /**
@@ -1305,16 +1313,50 @@ public class CommonFunctions {
      * @param newKeyPath  The Json Path of the new key that is to be added
      * @param keyToAdd    The key whose value is fetched from another response and needs to be added in the body of new request
      */
-    public static String jsonBody(String key, String environment, String newKeyPath, String keyToAdd) {
+//    public static String jsonBody(String key, String environment, String newKeyPath, String keyToAdd) {
+//        String fileName = environment.toLowerCase() + "_data.json";
+//        try {
+//            String fullPath = System.getProperty("user.dir") + "//src//test//resources//requestbodies//" + fileName;
+//            String jsonContent = new String(Files.readAllBytes(Paths.get(fullPath)));
+//            JSONObject parentObject = new JSONObject(jsonContent);
+//            JSONObject jsonObject = parentObject.getJSONObject(key);
+//            Configuration conf = Configuration.defaultConfiguration().addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL).addOptions(Option.SUPPRESS_EXCEPTIONS);
+//            DocumentContext documentContext = com.jayway.jsonpath.JsonPath.using(conf).parse(jsonObject.toString(2));
+//            documentContext.set(com.jayway.jsonpath.JsonPath.compile(newKeyPath), extractedValue.get(keyToAdd));
+//            return documentContext.jsonString();
+//        } catch (IOException e) {
+//            logger.error("No such file found in directory: " + fileName);
+//            Assert.fail("No such file found in directory: " + fileName);
+//            return null;
+//        }
+//    }
+    public static String jsonBody(String key, String environment, String newKeyPath, String keyToAdd, boolean overwrite) {
         String fileName = environment.toLowerCase() + "_data.json";
         try {
             String fullPath = System.getProperty("user.dir") + "//src//test//resources//requestbodies//" + fileName;
             String jsonContent = new String(Files.readAllBytes(Paths.get(fullPath)));
             JSONObject parentObject = new JSONObject(jsonContent);
             JSONObject jsonObject = parentObject.getJSONObject(key);
+
+            // Check if the key already exists and whether to overwrite it.
+            if (overwrite) {
+                jsonObject.put(newKeyPath, keyToAdd);
+                // Update the JSON content in memory.
+                parentObject.put(key, jsonObject);
+                // Write the updated JSON content back to the file.
+                try (FileWriter fileWriter = new FileWriter(fullPath)) {
+                    fileWriter.write(parentObject.toString(2));
+                    fileWriter.flush(); // Ensure the data is written immediately.
+                    Configuration conf = Configuration.defaultConfiguration().addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL).addOptions(Option.SUPPRESS_EXCEPTIONS);
+                    DocumentContext documentContext = com.jayway.jsonpath.JsonPath.using(conf).parse(jsonObject.toString(2));
+                    documentContext.set(com.jayway.jsonpath.JsonPath.compile(newKeyPath), extractedValue.get(keyToAdd));
+                }
+            }
             Configuration conf = Configuration.defaultConfiguration().addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL).addOptions(Option.SUPPRESS_EXCEPTIONS);
             DocumentContext documentContext = com.jayway.jsonpath.JsonPath.using(conf).parse(jsonObject.toString(2));
             documentContext.set(com.jayway.jsonpath.JsonPath.compile(newKeyPath), extractedValue.get(keyToAdd));
+
+            // Return the updated JSON string.
             return documentContext.jsonString();
         } catch (IOException e) {
             logger.error("No such file found in directory: " + fileName);

@@ -1,6 +1,6 @@
 package stepdefinitions;
 
-import Common.CommonFunctions;
+import common.CommonFunctions;
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -22,26 +22,26 @@ public class UtilStepDefinition extends CommonFunctions {
 
     @Given("^user creates a new request named \"(.*)\" request and sets \"(.*)\" as endpoint$")
     public void createNewRequestAndSetEndpoint(String key, String endpoint) {
-        userCreatesRequest(key, endpoint);
+        createsRequest(key, endpoint);
     }
 
-    @And("^user makes a \"(.*)\" request$")
-    public void userMakesRequest(String method) {
-        userHitsRequest(method);
+    @And("^user sends a \"(.*)\" request$")
+    public void makesRequest(String method) {
+        hitsRequest(method);
     }
 
-    @And("^user makes \"(.*)\" request for \"(.*)\" request$")
-    public void userMakesRequest(String method, String requestKey) {
-        userHitsRequest(method, requestKey);
+    @And("^user sends \"(.*)\" request for \"(.*)\" request$")
+    public void makesRequest(String method, String requestKey) {
+        hitsRequest(method, requestKey);
     }
 
     @Then("^user verifies \"(.*)\" status code$")
-    public void userVerifiesStatusCode(int statusCode) {
+    public void verifiesStatusCode(int statusCode) {
         verifyStatusCode(statusCode);
     }
 
     @Then("^user verifies response code as \"(.*)\" for \"(.*)\" response$")
-    public void userVerifiesStatusCode(int statusCode, String responseKey) {
+    public void verifiesStatusCode(int statusCode, String responseKey) {
         verifyStatusCode(statusCode, responseKey);
     }
 
@@ -56,18 +56,17 @@ public class UtilStepDefinition extends CommonFunctions {
     }
 
     @When("^user add headers name \"(.*)\" and header value \"(.*)\" to the request$")
-    public void userPassHeadersAsString(String headerName, String headerValue) {
+    public void addHeadersAsString(String headerName, String headerValue) {
         addHeaders(headerName, headerValue);
     }
 
     @When("^user adds header name \"(.*)\" and header value \"(.*)\" for \"(.*)\" request$")
-    public void userPassHeadersAsString(String requestKey, String headerName, String headerValue) {
+    public void addHeadersAsString(String requestKey, String headerName, String headerValue) {
         addHeaders(requestKey, headerName, headerValue);
-
     }
 
     @When("^user add headers as map to the request$")
-    public void userAddHeaders() {
+    public void addHeadersAsMap() {
         // Multiple headers can also be added in the form of a HashMap
         Map<String, String> headers = new HashMap<>();
         headers.put("Key1", "Value");
@@ -78,7 +77,7 @@ public class UtilStepDefinition extends CommonFunctions {
     }
 
     @When("^user add headers as map for \"(.*)\" request$")
-    public void userAddHeadersAsMapForRequest(String requestKey) {
+    public void addHeadersAsMap(String requestKey) {
         // Multiple headers can also be added in the form of a HashMap
         Map<String, String> headers = new HashMap<>();
         headers.put("Key1", "Value");
@@ -88,7 +87,7 @@ public class UtilStepDefinition extends CommonFunctions {
     }
 
     @When("^user add Query Param as map for \"(.*)\" request$")
-    public void userAddQueryParamAsMapForRequest(String requestKey) {
+    public void addQueryParamAsMap(String requestKey) {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("Key1", "Value");
         queryParams.put("Key2", "Value");
@@ -97,7 +96,7 @@ public class UtilStepDefinition extends CommonFunctions {
     }
 
     @When("^user adds Query Param as map to the request$")
-    public void userAddsQueryParamAsMapToTheRequest() {
+    public void addQueryParamAsMap() {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("Key1", "Value");
         queryParams.put("Key2", "Value");
@@ -106,7 +105,7 @@ public class UtilStepDefinition extends CommonFunctions {
     }
 
     @When("^user add Path Param as map for \"(.*)\" request$")
-    public void userAddPathParamAsMapForRequest(String requestKey) {
+    public void addPathParamAsMap(String requestKey) {
         Map<String, String> pathParams = new HashMap<>();
         pathParams.put("Key1", "Value");
         pathParams.put("Key2", "Value");
@@ -115,7 +114,7 @@ public class UtilStepDefinition extends CommonFunctions {
     }
 
     @When("^user adds Path Param as map to the request$")
-    public void userAddsPathParamAsMapToTheRequest() {
+    public void addsPathParamAsMap() {
         Map<String, String> pathParams = new HashMap<>();
         pathParams.put("Key1", "Value");
         pathParams.put("Key2", "Value");
@@ -124,7 +123,7 @@ public class UtilStepDefinition extends CommonFunctions {
     }
 
     @When("^user add Form Param as map for \"(.*)\" request$")
-    public void userAddFormParamAsMapForRequest(String requestKey) {
+    public void addFormParamAsMap(String requestKey) {
         Map<String, String> formParams = new HashMap<>();
         formParams.put("Key1", "Value");
         formParams.put("Key2", "Value");
@@ -133,7 +132,7 @@ public class UtilStepDefinition extends CommonFunctions {
     }
 
     @When("^user adds Form Param as map to the request$")
-    public void userAddsFormParamAsMapToTheRequest() {
+    public void addsFormParamAsMap() {
         Map<String, String> formParams = new HashMap<>();
         formParams.put("Key1", "Value");
         formParams.put("Key2", "Value");
@@ -152,52 +151,52 @@ public class UtilStepDefinition extends CommonFunctions {
     }
 
     @When("^user add Query Param key \"(.*)\" and param value \"(.*)\" to the request$")
-    public void userAddQueryParams(String key, String value) {
+    public void addQueryParam(String key, String value) {
         addQueryParams(key, value);
     }
 
     @And("^user adds form parameters$")
-    public void userAddsFormParameters(DataTable dataTable) {
+    public void addsFormParameters(DataTable dataTable) {
         addFormParams(dataTable);
     }
 
     @And("^user add form parameters to \"(.*)\" request$")
-    public void userAddsFormParametersToRequest(String requestKey, DataTable dataTable) {
+    public void addsFormParameters(String requestKey, DataTable dataTable) {
         addFormParams(requestKey, dataTable);
     }
 
     @And("^user adds path parameters$")
-    public void userAddsPathParameters(DataTable dataTable) {
+    public void addsPathParameters(DataTable dataTable) {
         addPathParams(dataTable);
     }
 
     @And("^user add path parameters to \"(.*)\" request$")
-    public void userAddPathParametersToRequest(String requestKey, DataTable dataTable) {
+    public void addPathParameters(String requestKey, DataTable dataTable) {
         addPathParams(requestKey, dataTable);
     }
 
     @When("^user adds Query Param key \"(.*)\" and param value \"(.*)\" to \"(.*)\" request$")
-    public void userAddQueryParams(String key, String value, String requestKey) {
+    public void addQueryParam(String key, String value, String requestKey) {
         addQueryParams(requestKey, key, value);
     }
 
     @When("^user adds Path Param key \"(.*)\" and param value \"(.*)\" to \"(.*)\" request$")
-    public void userAddPathParams(String key, String value, String requestKey) {
+    public void addPathParam(String key, String value, String requestKey) {
         addPathParams(requestKey, key, value);
     }
 
     @When("^user adds Form Param key \"(.*)\" and param value \"(.*)\" to \"(.*)\" request$")
-    public void userAddFormParams(String key, String value, String requestKey) {
+    public void addFormParam(String key, String value, String requestKey) {
         addFormParams(requestKey, key, value);
     }
 
     @When("^user add Form Param key \"(.*)\" and param value \"(.*)\" to the request$")
-    public void userAddFormParams(String key, String value) {
+    public void addFormParam(String key, String value) {
         addFormParams(key, value);
     }
 
     @When("^user add Path Param key \"(.*)\" and param value \"(.*)\" to the request$")
-    public void userAddPathParams(String key, String value) {
+    public void addPathParam(String key, String value) {
         addPathParams(key, value);
     }
 
@@ -268,12 +267,12 @@ public class UtilStepDefinition extends CommonFunctions {
     }
 
     @And("^user sets Content-Type as \"(.*)\"$")
-    public void userSetsContentType(String contentType) {
+    public void setsContentType(String contentType) {
         setContentType(contentType);
     }
 
     @And("^user sets Content-Type as \"(.*)\" for \"(.*)\" request$")
-    public void userSetsContentType(String contentType, String keyName) {
+    public void setsContentType(String contentType, String keyName) {
         setContentType(contentType, keyName);
     }
 
@@ -339,58 +338,58 @@ public class UtilStepDefinition extends CommonFunctions {
     }
 
     @And("^user adds \"(.*)\" body$")
-    public void userAddsBodyToRequest(String requestBody) {
-        userAddsBody(requestBody);
+    public void addsBodyToRequest(String requestBody) {
+        addsBody(requestBody);
     }
 
     @And("^user adds \"(.*)\" body to \"(.*)\" request$")
-    public void userAddsBodyToRequest(String methodBody, String keyName) {
-        userAddsBody(methodBody, keyName);
+    public void addsBodyToRequest(String methodBody, String keyName) {
+        addsBody(methodBody, keyName);
     }
 
     @Then("^user extracts \"(.*)\" from response$")
-    public void userExtractsValueFromFromResponse(String key) {
+    public void extractsValueFromFromResponse(String key) {
         extractValue(key);
     }
 
     @When("^user extracts \"(.*)\" from \"(.*)\" response")
-    public void userExtractsFromResponse(String extractedKey, String requestKey) {
+    public void extractsFromResponse(String extractedKey, String requestKey) {
         extractValue(extractedKey, requestKey);
     }
 
     @When("^user extracts the following keys from response")
-    public void userExtractsTheFollowingKeysFromResponse(DataTable dt) {
+    public void extractsFromResponse(DataTable dt) {
         extractValues(dt);
     }
 
     @When("^user extracts the following keys from \"(.*)\" response")
-    public void userExtractsTheFollowingKeysFromResponse(DataTable dataTable, String requestKey) {
+    public void extractsFromResponse(DataTable dataTable, String requestKey) {
         extractValues(dataTable, requestKey);
     }
 
     @Then("^user adds extracted value of key \"(.*)\" at \"(.*?)\" path in \"(.*)\" request body$")
-    public void userAddsExtractedKeyInBody(String extractedKey, String pathToSet, String methodBody) {
-        addExtractedValueFromResponseToARequest(extractedKey, pathToSet, methodBody);
+    public void addsExtractedKeyInBody(String extractedKey, String pathToSet, String methodBody) {
+        addExtractedValueToRequest(extractedKey, pathToSet, methodBody);
     }
 
     @When("^user adds extracted value of key \"(.*)\" at \"(.*)\" path in \"(.*)\" request body of \"(.*)\" request$")
-    public void userAddsExtractedValueOfKeyAtPathInRequestBodyOfRequest(String extractedKey, String pathToSet, String methodBody, String requestKey) {
-        addExtractedValueFromResponseToARequest(extractedKey, pathToSet, methodBody, requestKey);
+    public void addsExtractedValueInRequestBody(String extractedKey, String pathToSet, String methodBody, String requestKey) {
+        addExtractedValueToRequest(extractedKey, pathToSet, methodBody, requestKey);
 
     }
 
     @Then("^user verifies state of key-value in response body$")
-    public void userVerifiesStateOfKeyValueInResponseBody(DataTable dataTable) {
+    public void verifiesStateOfKeyValueInResponseBody(DataTable dataTable) {
         verifyKeyValueInResponseBody(dataTable);
     }
 
     @And("^user adds Basic Auth with username and password$")
-    public void userAddsBasicAuthWithUserAndPassword() {
+    public void addsBasicAuth() {
         addBasicAuth();
     }
 
     @And("^user adds Bearer Auth with clientID and clientSecret$")
-    public void userAddsBearerAuthWithClientAndSecret() {
+    public void addsBearerAuth() {
         addBearerAuth();
     }
 
