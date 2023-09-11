@@ -1,4 +1,4 @@
-package Common;
+package common;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -82,7 +82,7 @@ public class CommonFunctions {
      * @param key      The key name with which the RequestSpecification is stored is mapped.
      * @param endpoint The complete endpoint which will be hit during request
      */
-    public void userCreatesRequest(String key, String endpoint) {
+    public void createsRequest(String key, String endpoint) {
         RequestSpecification reqSpec = SerenityRest.given().spec(requestSpecifications(endpoint));
         if (!reqSpecMap.containsKey(key)) {
             latestResponseKey = key;
@@ -99,7 +99,7 @@ public class CommonFunctions {
      *
      * @param requestType Request Method to be sent. Can be GET, POST, PUT, PATCH, DELETE
      */
-    public void userHitsRequest(String requestType) {
+    public void sendRequest(String requestType) {
         requestType = requestType.toUpperCase();
         try {
             Response response = reqSpecMap.get(latestResponseKey).log().all().when().request(requestType);
@@ -118,7 +118,7 @@ public class CommonFunctions {
      * @param requestType Request Method to be sent. Can be GET, POST, PUT, PATCH, DELETE
      * @param requestKey  Key name of the request associated with this response
      */
-    public void userHitsRequest(String requestType, String requestKey) {
+    public void sendRequest(String requestType, String requestKey) {
         Response response = null;
         requestType = requestType.toUpperCase();
         try {
@@ -136,7 +136,7 @@ public class CommonFunctions {
      *
      * @param methodBody Key of the method body under which request body is stored in data.json file
      */
-    public void userAddsBody(String methodBody) {
+    public void addBody(String methodBody) {
         reqSpecMap.get(latestResponseKey).log().all().when().body(jsonBody(methodBody, environment));
     }
 
@@ -146,7 +146,7 @@ public class CommonFunctions {
      * @param methodBody Key of the method body under which request body is stored in data.json file
      * @param requestKey Key name of the request associated with this response
      */
-    public void userAddsBody(String methodBody, String requestKey) {
+    public void addBody(String methodBody, String requestKey) {
         if (!reqSpecMap.containsKey(requestKey)) {
             logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
@@ -624,8 +624,8 @@ public class CommonFunctions {
      * @param methodBody Method body in which key needs to be added
      */
 
-    public void addExtractedValueFromResponseToARequest(String keyToAdd, String newKeyPath, String methodBody) {
-        reqSpecMap.get(latestResponseKey).log().all().when().body(jsonBody(methodBody, environment, newKeyPath, keyToAdd));
+    public void addExtractedValueToRequest(String keyToAdd, String newKeyPath, String methodBody) {
+        reqSpecMap.get(latestResponseKey).log().all().when().body(jsonBody(methodBody, environment, newKeyPath, keyToAdd, true));
     }
 
     /**
@@ -636,8 +636,8 @@ public class CommonFunctions {
      * @param methodBody Method body in which key needs to be added
      */
 
-    public void addExtractedValueFromResponseToARequest(String keyToAdd, String newKeyPath, String methodBody, String requestKey) {
-        reqSpecMap.get(requestKey).log().all().when().body(jsonBody(methodBody, environment, newKeyPath, keyToAdd));
+    public void addExtractedValueToRequest(String keyToAdd, String newKeyPath, String methodBody, String requestKey) {
+        reqSpecMap.get(requestKey).log().all().when().body(jsonBody(methodBody, environment, newKeyPath, keyToAdd, true));
     }
 
     /**
@@ -1305,7 +1305,7 @@ public class CommonFunctions {
      * @param newKeyPath  The Json Path of the new key that is to be added
      * @param keyToAdd    The key whose value is fetched from another response and needs to be added in the body of new request
      */
-    public static String jsonBody(String key, String environment, String newKeyPath, String keyToAdd) {
+    public static String jsonBody(String key, String environment, String newKeyPath, String keyToAdd, boolean overwrite) {
         String fileName = environment.toLowerCase() + "_data.json";
         try {
             String fullPath = System.getProperty("user.dir") + "//src//test//resources//requestbodies//" + fileName;
@@ -1315,6 +1315,20 @@ public class CommonFunctions {
             Configuration conf = Configuration.defaultConfiguration().addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL).addOptions(Option.SUPPRESS_EXCEPTIONS);
             DocumentContext documentContext = com.jayway.jsonpath.JsonPath.using(conf).parse(jsonObject.toString(2));
             documentContext.set(com.jayway.jsonpath.JsonPath.compile(newKeyPath), extractedValue.get(keyToAdd));
+
+            // Check if the key already exists and whether to overwrite it.
+            if (overwrite) {
+                jsonObject.put(newKeyPath, keyToAdd);
+                // Update the JSON content in memory.
+                parentObject.put(key, jsonObject);
+                // Write the updated JSON content back to the file.
+                try (FileWriter fileWriter = new FileWriter(fullPath)) {
+                    fileWriter.write(parentObject.toString(2));
+                    fileWriter.flush(); // Ensure the data is written immediately.
+                }
+            }
+
+            // Return the updated JSON string.
             return documentContext.jsonString();
         } catch (IOException e) {
             logger.error("No such file found in directory: " + fileName);
