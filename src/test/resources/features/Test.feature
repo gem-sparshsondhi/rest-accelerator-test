@@ -10,7 +10,7 @@ Feature: Sample Feature file to demonstrate all the accelerator functions
  #---------------------------------------------single request-------------------------------------------
   @Requests
   Scenario: Request Creation functions
-    Given user creates a new request named "requestOne" and sets "custom" as endpoint
+    Given user creates a new request named "requestOne" request and sets "custom" as endpoint
     When user sets Content-Type as "application/json"
     When user sets relaxed HTTPS validation
     When user sets url encoding to "false"
@@ -46,7 +46,7 @@ Feature: Sample Feature file to demonstrate all the accelerator functions
 #   AddBody
     When user adds "POSTReqBody" body
 #    Hit Request
-    When user makes a "post" request
+    When user sends a "post" request
 #    Extract Keys
     When user extracts "data.email" from response
     When user extracts the following keys from response
@@ -57,7 +57,7 @@ Feature: Sample Feature file to demonstrate all the accelerator functions
 
     #---------------------------------------------- multiple requests------------------------------------
 
-    Given user creates a new request named "requestTwo" and sets "custom" as endpoint
+    Given user creates a new request named "requestTwo" request and sets "custom" as endpoint
     When user sets Content-Type as "application/json" for "requestTwo" request
     When user sets relaxed HTTPS validation for "requestTwo" request
     When user sets url encoding to "false" for "requestTwo" request
@@ -86,9 +86,9 @@ Feature: Sample Feature file to demonstrate all the accelerator functions
       | key           | val           |
     When user adds Form Param as map for "requestTwo" request
 #    Make request
-    When user makes "get" request for "requestTwo" request
+    When user sends "get" request for "requestTwo" request
 
-    Given user creates a new request named "requestThree" and sets "custom" as endpoint
+    Given user creates a new request named "requestThree" request and sets "custom" as endpoint
 #    Multipart Files
     When user sets Content-Type as "multipart/json" for "requestThreer" request
     When user adds multipart file "SampleMultipartFile.txt" with "file" control name to "requestThree" request
@@ -144,6 +144,11 @@ Feature: Sample Feature file to demonstrate all the accelerator functions
     When user clears all requests
     When user clears all responses
 
-
+  @JsonComparator
+  Scenario: Json Comparator sample scenario
+    Given user creates a new request named "response1" request and sets "read" as endpoint
+    When user sends a "GET" request
+    Given user creates a new request named "response2" request and sets "read" as endpoint
+    When user sends a "GET" request
     #Json Comparison
     When user compares response "response1" with "response2" response using JSON Comparator
