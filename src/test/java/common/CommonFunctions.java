@@ -1338,6 +1338,10 @@ public class CommonFunctions {
             JSONObject parentObject = new JSONObject(jsonContent);
             JSONObject jsonObject = parentObject.getJSONObject(key);
 
+            Configuration conf = Configuration.defaultConfiguration().addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL).addOptions(Option.SUPPRESS_EXCEPTIONS);
+            DocumentContext documentContext = com.jayway.jsonpath.JsonPath.using(conf).parse(jsonObject.toString(2));
+            documentContext.set(com.jayway.jsonpath.JsonPath.compile(newKeyPath), extractedValue.get(keyToAdd));
+
             // Check if the key already exists and whether to overwrite it.
             if (overwrite) {
                 jsonObject.put(newKeyPath, keyToAdd);
@@ -1347,14 +1351,8 @@ public class CommonFunctions {
                 try (FileWriter fileWriter = new FileWriter(fullPath)) {
                     fileWriter.write(parentObject.toString(2));
                     fileWriter.flush(); // Ensure the data is written immediately.
-                    Configuration conf = Configuration.defaultConfiguration().addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL).addOptions(Option.SUPPRESS_EXCEPTIONS);
-                    DocumentContext documentContext = com.jayway.jsonpath.JsonPath.using(conf).parse(jsonObject.toString(2));
-                    documentContext.set(com.jayway.jsonpath.JsonPath.compile(newKeyPath), extractedValue.get(keyToAdd));
                 }
             }
-            Configuration conf = Configuration.defaultConfiguration().addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL).addOptions(Option.SUPPRESS_EXCEPTIONS);
-            DocumentContext documentContext = com.jayway.jsonpath.JsonPath.using(conf).parse(jsonObject.toString(2));
-            documentContext.set(com.jayway.jsonpath.JsonPath.compile(newKeyPath), extractedValue.get(keyToAdd));
 
             // Return the updated JSON string.
             return documentContext.jsonString();
