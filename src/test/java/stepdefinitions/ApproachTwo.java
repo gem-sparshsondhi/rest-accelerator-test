@@ -39,7 +39,7 @@ public class ApproachTwo extends CommonFunctions {
     public void createRequestWithBody() {
         createsRequest("CreateUser", "create");
         addHeaders("CreateUser", "Accept", "*/*");
-        addsBody("POSTReqBody", "CreateUser");
+        addBody("POSTReqBody", "CreateUser");
     }
 
     @When("user extracts key from response")
@@ -62,7 +62,7 @@ public class ApproachTwo extends CommonFunctions {
     public void createNewRequestWithBody() {
         createsRequest("CreateUser", "create");
         addHeaders("CreateUser", "Accept", "*/*");
-        addsBody("POSTReqBody", "CreateUser");
+        addBody("POSTReqBody", "CreateUser");
     }
 
     @And("^user sends a POST request$")
