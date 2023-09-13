@@ -20,7 +20,7 @@ Feature: Sample Detailed Scenarios
     When user adds headers to "CreateUser" request
       | Header Name | Header Value |
       | Accept      | */*          |
-    When user adds extracted value of key "data.email" at "email" path in "POSTReqBody" request body
+    When user adds extracted value of key "data.email" at "user[0].email" path in "POSTReqBody" request body
     When user sends "POST" request for "CreateUser" request
     Then user verifies "201" status code
 

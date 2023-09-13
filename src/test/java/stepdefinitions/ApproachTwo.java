@@ -49,7 +49,7 @@ public class ApproachTwo extends CommonFunctions {
 
     @Then("user adds extracted value from response to request body")
     public void addExtractedValueToRequestBody() {
-        addExtractedValueToRequest("email", "email", "POSTReqBody");
+        addExtractedValueToRequest("email", "user[0].email", "POSTReqBody");
     }
 
     @When("user sends a POST request and validates status code")

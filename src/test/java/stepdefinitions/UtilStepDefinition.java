@@ -385,11 +385,13 @@ public class UtilStepDefinition extends CommonFunctions {
     @And("^user adds Basic Auth with username and password$")
     public void addsBasicAuth() {
         addBasicAuth();
+        addBasicAuth("");
     }
 
     @And("^user adds Bearer Auth with clientID and clientSecret$")
     public void addsBearerAuth() {
         addBearerAuth();
+        addBearerAuth("");
     }
 
 
