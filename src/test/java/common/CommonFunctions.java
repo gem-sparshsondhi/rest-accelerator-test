@@ -90,10 +90,12 @@ public class CommonFunctions {
             InputStream inputStream = getClass().getClassLoader().getResourceAsStream("config.properties");
             properties.load(inputStream);
             String reportingType = properties.getProperty("ReportingType");
-            if (StringUtils.equalsIgnoreCase(reportingType, "Serenity")) {
+            if (null == reportingType) {
                 reporting = new EnableSerenityReporting();
-            } else {
+            } else if (StringUtils.equalsIgnoreCase(reportingType.toLowerCase(), "gemjar")) {
                 reporting = new EnableGemReporting();
+            } else if (StringUtils.equalsIgnoreCase(reportingType.toLowerCase(), "serenity")) {
+                reporting = new EnableSerenityReporting();
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -114,10 +116,12 @@ public class CommonFunctions {
             InputStream inputStream = getClass().getClassLoader().getResourceAsStream("config.properties");
             properties.load(inputStream);
             String loggingType = properties.getProperty("Logger");
-            if (StringUtils.equalsIgnoreCase(loggingType, "slf4j")) {
+            if (null == loggingType) {
                 logger = new EnableSlf4jLogging();
-            } else {
+            } else if (StringUtils.equalsIgnoreCase(loggingType.toLowerCase(), "jlc")) {
                 logger = new EnableJLCLogging();
+            } else if (StringUtils.equalsIgnoreCase(loggingType.toLowerCase(), "slf4j")) {
+                logger = new EnableSlf4jLogging();
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -1429,6 +1433,7 @@ public class CommonFunctions {
         String password = new String(Base64.decode(Unpooled.wrappedBuffer(EnvironmentSpecificConfiguration.from(variables).getProperty("password").getBytes())).array());
         reqSpecMap.get(latestResponseKey).auth().basic(username, password);
     }
+
     /**
      * Adds basic authentication to the specified request
      * Fetches credentials from serenity.conf file
