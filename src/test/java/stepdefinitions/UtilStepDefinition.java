@@ -6,6 +6,7 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import logging.LoggerUtils;
 import net.serenitybdd.core.annotations.events.BeforeScenario;
 import net.serenitybdd.core.environment.EnvironmentSpecificConfiguration;
 import net.thucydides.core.environment.SystemEnvironmentVariables;
@@ -15,6 +16,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class UtilStepDefinition extends CommonFunctions {
+
+
     @BeforeScenario
     public void initializeVariables() {
         resetVariables();
@@ -23,6 +26,8 @@ public class UtilStepDefinition extends CommonFunctions {
     @Given("^user creates a new request named \"(.*)\" request and sets \"(.*)\" as endpoint$")
     public void createNewRequestAndSetEndpoint(String key, String endpoint) {
         createsRequest(key, endpoint);
+
+
     }
 
     @And("^user sends a \"(.*)\" request$")
@@ -386,11 +391,13 @@ public class UtilStepDefinition extends CommonFunctions {
     @And("^user adds Basic Auth with username and password$")
     public void addsBasicAuth() {
         addBasicAuth();
+        addBasicAuth("");
     }
 
     @And("^user adds Bearer Auth with clientID and clientSecret$")
     public void addsBearerAuth() {
         addBearerAuth();
+        addBearerAuth("");
     }
 
 

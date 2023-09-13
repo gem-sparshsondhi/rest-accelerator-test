@@ -5,9 +5,15 @@ import org.slf4j.LoggerFactory;
 
 public class EnableSlf4jLogging implements LoggerUtils {
     private static final Logger logger = LoggerFactory.getLogger(EnableSlf4jLogging.class);
+
     @Override
     public void logInfo(String message) {
         logger.info(message);
+    }
+
+    @Override
+    public void logInfo(String message, boolean val) {
+        logger.info(message, val);
     }
 
     @Override

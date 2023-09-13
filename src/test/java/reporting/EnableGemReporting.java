@@ -1,13 +1,11 @@
-/*
 package reporting;
 
-import com.gemini.generic.reporting.GemTestReporter;
-import com.gemini.generic.reporting.STATUS;
+/*import com.gemini.generic.reporting.GemTestReporter;
+import com.gemini.generic.reporting.STATUS;*/
 
-public class EnableGemReporting implements Reporting{
+public class EnableGemReporting implements Reporting {
     @Override
-    public void reportSteps(String title, String description, String status) {
-        GemTestReporter.addTestStep(title, description, STATUS.valueOf("STATUS." + status));
+    public void reportSteps(String title, String description) {
+//        GemTestReporter.addTestStep(title, description, STATUS.valueOf("STATUS." + status));
     }
 }
-*/

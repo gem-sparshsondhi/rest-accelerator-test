@@ -15,12 +15,11 @@ Feature: Test
     When user extracts the following keys from response
       | Key Path   |
       | data.email |
-
     Given user creates a new request named "PostData" request and sets "create" as endpoint
     When user adds headers to "PostData" request
       | Header Name | Header Value |
       | Accept      | */*          |
-    When user adds extracted value of key "data.email" at "email" path in "POSTReqBody" request body
+    When user adds extracted value of key "data.email" at "data.email" path in "POSTReqBody" request body
     When user sends "POST" request for "PostData" request
     Then user verifies "201" status code
 

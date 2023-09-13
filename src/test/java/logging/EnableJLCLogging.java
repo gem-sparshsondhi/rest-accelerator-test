@@ -5,10 +5,17 @@ import org.apache.commons.logging.LogFactory;
 
 public class EnableJLCLogging implements LoggerUtils {
     private static final Log logger = LogFactory.getLog(EnableJLCLogging.class);
+
     @Override
     public void logInfo(String message) {
         logger.info(message);
     }
+
+    @Override
+    public void logInfo(String message, boolean val) {
+        logger.info(message);
+    }
+
     @Override
     public void logError(String message) {
         logger.error(message);

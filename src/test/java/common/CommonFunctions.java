@@ -21,11 +21,13 @@ import logging.EnableJLCLogging;
 import logging.EnableSlf4jLogging;
 import logging.LoggerUtils;
 import net.serenitybdd.core.Serenity;
+import net.serenitybdd.core.environment.ConfiguredEnvironment;
 import net.serenitybdd.core.environment.EnvironmentSpecificConfiguration;
 import net.serenitybdd.rest.SerenityRest;
 import net.thucydides.core.environment.SystemEnvironmentVariables;
 import net.thucydides.core.util.EnvironmentVariables;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -33,6 +35,9 @@ import org.json.JSONTokener;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reporting.EnableGemReporting;
+import reporting.EnableSerenityReporting;
+import reporting.Reporting;
 import stepdefinitions.UtilStepDefinition;
 
 import java.io.*;
@@ -43,13 +48,11 @@ import java.util.*;
 
 public class CommonFunctions {
 
-    private LoggerUtils loggerUtils = new EnableSlf4jLogging();
-    private LoggerUtils loggerUtilsTwo = new EnableJLCLogging();
-
+    private LoggerUtils logger = logger();
+    public Reporting reporting = reporting();
     public static HashMap<String, RequestSpecification> reqSpecMap = new HashMap<>();
     public static HashMap<String, Response> responseMap = new HashMap<>();
     public static String latestResponseKey = "";
-    public static final Logger logger = LoggerFactory.getLogger(CommonFunctions.class);
     static final EnvironmentVariables variables = SystemEnvironmentVariables.createEnvironmentVariables();
     static HashMap<String, String> extractedValue = new HashMap<>();
     final String environment = System.getProperty("environment");
@@ -65,6 +68,9 @@ public class CommonFunctions {
     private static String res = "";
     private static HashSet<String> finalResult = new HashSet<>();
 
+    /**
+     * Function to reset all the declared variables before execution
+     */
     public static void resetVariables() {
         reqSpecMap = new HashMap<>();
         responseMap = new HashMap<>();
@@ -82,6 +88,56 @@ public class CommonFunctions {
     }
 
     /**
+     * Function implementing reporting interface
+     */
+
+    public Reporting reporting() {
+        Properties properties;
+        try {
+            properties = new Properties();
+            InputStream inputStream = getClass().getClassLoader().getResourceAsStream("config.properties");
+            properties.load(inputStream);
+            String reportingType = properties.getProperty("ReportingType");
+            if (StringUtils.equalsIgnoreCase(reportingType, "Serenity")) {
+                reporting = new EnableSerenityReporting();
+            } else {
+                reporting = new EnableGemReporting();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return reporting;
+    }
+
+    /**
+     * Function implementing logging interface
+     */
+    public LoggerUtils logger() {
+        Properties properties;
+        try {
+            properties = new Properties();
+            InputStream inputStream = getClass().getClassLoader().getResourceAsStream("config.properties");
+            properties.load(inputStream);
+            String loggingType = properties.getProperty("Logger");
+            if (StringUtils.equalsIgnoreCase(loggingType, "slf4j")) {
+                logger = new EnableSlf4jLogging();
+            } else {
+                logger = new EnableJLCLogging();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return logger;
+    }
+
+
+    /**
      * Creates a new RequestSpecification for the user to modify and use as and when required
      * <p>This is the starting point for all new requests and must be called for successful Rest request.
      *
@@ -93,11 +149,9 @@ public class CommonFunctions {
         if (!reqSpecMap.containsKey(key)) {
             latestResponseKey = key;
             reqSpecMap.put(key, reqSpec);
-
-            loggerUtils.logInfo("Test");
-            loggerUtilsTwo.logInfo("TestTwo");
+            reporting.reportSteps("Create Request", "PASS: Successfully created request");
         } else {
-            logger.error("A request with this key name already exists. Please rename either request. Request to be renamed: " + key);
+            logger.logError("A request with this key name already exists. Please rename either request. Request to be renamed: " + key);
             Assert.fail("A request with this key name already exists. Please rename either request. Request to be renamed: " + key);
         }
     }
@@ -113,10 +167,11 @@ public class CommonFunctions {
         try {
             RequestSpecification requestSpec = reqSpecMap.get(latestResponseKey);
             Response response = requestSpec.when().log().all().request(requestType);
-            logger.info("Response Body: \n\n" + response.getBody().asPrettyString());
+            logger.logInfo("Response Body: \n\n" + response.getBody().asPrettyString());
             responseMap.put(latestResponseKey, response);
+            reporting.reportSteps("Send Request", "PASS: Successfully sent request");
         } catch (Exception e) {
-            logger.info("Unsupported method: " + requestType);
+            logger.logInfo("Unsupported method: " + requestType);
         }
     }
 
@@ -132,11 +187,12 @@ public class CommonFunctions {
         requestType = requestType.toUpperCase();
         try {
             response = reqSpecMap.get(requestKey).log().all().when().request(requestType);
+            reporting.reportSteps("Send Request", "PASS: Successfully sent request");
         } catch (Exception e) {
-            logger.info("Unsupported method: " + requestType);
+            logger.logInfo("Unsupported method: " + requestType);
         }
         assert response != null;
-        logger.info("Response Body: \n\n" + response.getBody().asPrettyString());
+        logger.logInfo("Response Body: \n\n" + response.getBody().asPrettyString());
         responseMap.put(requestKey, response);
     }
 
@@ -157,7 +213,7 @@ public class CommonFunctions {
      */
     public void addsBody(String methodBody, String requestKey) {
         if (!reqSpecMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
         reqSpecMap.get(requestKey).when().body(jsonBody(methodBody, environment));
@@ -168,7 +224,7 @@ public class CommonFunctions {
      *
      * @param contentType The Content-Type to be set
      */
-    public static void setContentType(String contentType) {
+    public void setContentType(String contentType) {
         reqSpecMap.get(latestResponseKey).contentType(contentType);
     }
 
@@ -178,9 +234,9 @@ public class CommonFunctions {
      * @param contentType The Content-Type to be set
      * @param requestKey  Key name of the request associated with this response
      */
-    public static void setContentType(String contentType, String requestKey) {
+    public void setContentType(String contentType, String requestKey) {
         if (!reqSpecMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
         reqSpecMap.get(requestKey).contentType(contentType);
@@ -193,7 +249,7 @@ public class CommonFunctions {
      */
     public void verifyStatusCode(int statusCode) {
         Assert.assertEquals("Status Code mismatch", responseMap.get(latestResponseKey).getStatusCode(), statusCode);
-        logger.info("Status code verified");
+        logger.logInfo("Status code verified");
     }
 
     /**
@@ -204,12 +260,12 @@ public class CommonFunctions {
      */
     public void verifyStatusCode(int statusCode, String responseKey) {
         if (!responseMap.containsKey(responseKey)) {
-            logger.error("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
         }
         Response res = responseMap.get(responseKey);
         Assert.assertEquals("Status Code mismatch", statusCode, res.getStatusCode());
-        logger.info("Status code verified");
+        logger.logInfo("Status code verified");
     }
 
     /**
@@ -219,7 +275,7 @@ public class CommonFunctions {
      * @param headerValue Header Value
      */
 
-    public static void addHeaders(String headerName, String headerValue) {
+    public void addHeaders(String headerName, String headerValue) {
         reqSpecMap.get(latestResponseKey).header(headerName, headerValue);
     }
 
@@ -230,9 +286,9 @@ public class CommonFunctions {
      * @param headerValue Header Value
      * @param requestKey  Key name of the request associated with this response
      */
-    public static void addHeaders(String requestKey, String headerName, String headerValue) {
+    public void addHeaders(String requestKey, String headerName, String headerValue) {
         if (!reqSpecMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
         reqSpecMap.get(requestKey).header(headerName, headerValue);
@@ -243,7 +299,7 @@ public class CommonFunctions {
      *
      * @param dt DataTable of Header Name and Header Value
      */
-    public static void addHeaders(DataTable dt) {
+    public void addHeaders(DataTable dt) {
         if (validateHeader(dt, "Header Name") && validateHeader(dt, "Header Value")) {
             List<Map<String, String>> headers = dt.asMaps();
             for (Map<String, String> header : headers) {
@@ -258,9 +314,9 @@ public class CommonFunctions {
      * @param dt         DataTable of Header Name and Header Value
      * @param requestKey Key name of the request associated with this response
      */
-    public static void addHeaders(String requestKey, DataTable dt) {
+    public void addHeaders(String requestKey, DataTable dt) {
         if (!reqSpecMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
         if (validateHeader(dt, "Header Name") && validateHeader(dt, "Header Value")) {
@@ -277,7 +333,7 @@ public class CommonFunctions {
      * @param headers Headers as a Map of header key and header value
      */
 
-    public static void addHeadersViaMap(Map<String, String> headers) {
+    public void addHeadersViaMap(Map<String, String> headers) {
         reqSpecMap.get(latestResponseKey).headers(headers);
     }
 
@@ -288,9 +344,9 @@ public class CommonFunctions {
      * @param requestKey Key name of the request associated with this response
      */
 
-    public static void addHeadersViaMap(String requestKey, Map<String, String> headers) {
+    public void addHeadersViaMap(String requestKey, Map<String, String> headers) {
         if (!reqSpecMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
         reqSpecMap.get(requestKey).headers(headers);
@@ -303,7 +359,7 @@ public class CommonFunctions {
      * @param parameterValue Header Value
      */
 
-    public static void addQueryParams(String parameterKey, String parameterValue) {
+    public void addQueryParams(String parameterKey, String parameterValue) {
         reqSpecMap.get(latestResponseKey).queryParam(parameterKey, parameterValue);
     }
 
@@ -315,9 +371,9 @@ public class CommonFunctions {
      * @param requestKey     Key name of the request associated with this response
      */
 
-    public static void addQueryParams(String requestKey, String parameterKey, String parameterValue) {
+    public void addQueryParams(String requestKey, String parameterKey, String parameterValue) {
         if (!reqSpecMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
 
@@ -329,7 +385,7 @@ public class CommonFunctions {
      *
      * @param dt DataTable of Parameter Key and Value
      */
-    public static void addQueryParams(DataTable dt) {
+    public void addQueryParams(DataTable dt) {
         if (validateHeader(dt, "Parameter Key") && validateHeader(dt, "Parameter Value")) {
             List<Map<String, String>> queryParams = dt.asMaps();
             for (Map<String, String> params : queryParams) {
@@ -344,9 +400,9 @@ public class CommonFunctions {
      * @param dt         DataTable of Parameter Key and Value
      * @param requestKey Key name of the request associated with this response
      */
-    public static void addQueryParams(String requestKey, DataTable dt) {
+    public void addQueryParams(String requestKey, DataTable dt) {
         if (!reqSpecMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
         if (validateHeader(dt, "Parameter Key") && validateHeader(dt, "Parameter Value")) {
@@ -362,7 +418,7 @@ public class CommonFunctions {
      *
      * @param queryParam Query Params as a Map of param key and param value
      */
-    public static void addQueryParamsViaMap(Map<String, String> queryParam) {
+    public void addQueryParamsViaMap(Map<String, String> queryParam) {
         reqSpecMap.get(latestResponseKey).queryParams(queryParam);
     }
 
@@ -372,9 +428,9 @@ public class CommonFunctions {
      * @param queryParam Query Params as a Map of param key and param value
      * @param requestKey Key name of the request associated with this response
      */
-    public static void addQueryParamsViaMap(String requestKey, Map<String, String> queryParam) {
+    public void addQueryParamsViaMap(String requestKey, Map<String, String> queryParam) {
         if (!reqSpecMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
         reqSpecMap.get(requestKey).queryParams(queryParam);
@@ -386,7 +442,7 @@ public class CommonFunctions {
      * @param parameterKey   Form Param Name
      * @param parameterValue Form Param Value
      */
-    public static void addFormParams(String parameterKey, String parameterValue) {
+    public void addFormParams(String parameterKey, String parameterValue) {
         reqSpecMap.get(latestResponseKey).queryParam(parameterKey, parameterValue);
     }
 
@@ -397,9 +453,9 @@ public class CommonFunctions {
      * @param parameterValue Form Param Value
      * @param requestKey     Key name of the request associated with this response
      */
-    public static void addFormParams(String requestKey, String parameterKey, String parameterValue) {
+    public void addFormParams(String requestKey, String parameterKey, String parameterValue) {
         if (!reqSpecMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
 
@@ -411,7 +467,7 @@ public class CommonFunctions {
      *
      * @param dt DataTable of Parameter Key and Value
      */
-    public static void addFormParams(DataTable dt) {
+    public void addFormParams(DataTable dt) {
         if (validateHeader(dt, "Parameter Key") && validateHeader(dt, "Parameter Value")) {
             List<Map<String, String>> formParams = dt.asMaps();
             for (Map<String, String> params : formParams) {
@@ -426,9 +482,9 @@ public class CommonFunctions {
      * @param dt         DataTable of Parameter Key and Value
      * @param requestKey Key name of the request associated with this response
      */
-    public static void addFormParams(String requestKey, DataTable dt) {
+    public void addFormParams(String requestKey, DataTable dt) {
         if (!reqSpecMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
         if (validateHeader(dt, "Parameter Key") && validateHeader(dt, "Parameter Value")) {
@@ -444,7 +500,7 @@ public class CommonFunctions {
      *
      * @param formParams Form Params as a Map of param key and param value
      */
-    public static void addFormParamsViaMap(Map<String, String> formParams) {
+    public void addFormParamsViaMap(Map<String, String> formParams) {
         reqSpecMap.get(latestResponseKey).formParams(formParams);
     }
 
@@ -454,9 +510,9 @@ public class CommonFunctions {
      * @param formParams Form Params as a Map of param key and param value
      * @param requestKey Key name of the request associated with this response
      */
-    public static void addFormParamsViaMap(String requestKey, Map<String, String> formParams) {
+    public void addFormParamsViaMap(String requestKey, Map<String, String> formParams) {
         if (!reqSpecMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
         reqSpecMap.get(requestKey).formParams(formParams);
@@ -469,7 +525,7 @@ public class CommonFunctions {
      * @param parameterKey   Path Param Name
      * @param parameterValue Path Param Value
      */
-    public static void addPathParams(String parameterKey, String parameterValue) {
+    public void addPathParams(String parameterKey, String parameterValue) {
 
         reqSpecMap.get(latestResponseKey).pathParam(parameterKey, parameterValue);
     }
@@ -482,9 +538,9 @@ public class CommonFunctions {
      * @param requestKey     Key name of the request associated with this response
      */
 
-    public static void addPathParams(String requestKey, String parameterKey, String parameterValue) {
+    public void addPathParams(String requestKey, String parameterKey, String parameterValue) {
         if (!reqSpecMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
         reqSpecMap.get(requestKey).pathParam(parameterKey, parameterValue);
@@ -496,7 +552,7 @@ public class CommonFunctions {
      * @param dt DataTable of Parameter Key and Value
      */
 
-    public static void addPathParams(DataTable dt) {
+    public void addPathParams(DataTable dt) {
         if (validateHeader(dt, "Parameter Key") && validateHeader(dt, "Parameter Value")) {
             List<Map<String, String>> pathParams = dt.asMaps();
             for (Map<String, String> params : pathParams) {
@@ -511,9 +567,9 @@ public class CommonFunctions {
      * @param dt         DataTable of Parameter Key and Value
      * @param requestKey Key name of the request associated with this response
      */
-    public static void addPathParams(String requestKey, DataTable dt) {
+    public void addPathParams(String requestKey, DataTable dt) {
         if (!reqSpecMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
         if (validateHeader(dt, "Parameter Key") && validateHeader(dt, "Parameter Value")) {
@@ -530,7 +586,7 @@ public class CommonFunctions {
      *
      * @param pathParams Path Params as a Map of param key and param value
      */
-    public static void addPathParamsViaMap(Map<String, String> pathParams) {
+    public void addPathParamsViaMap(Map<String, String> pathParams) {
         reqSpecMap.get(latestResponseKey).pathParams(pathParams);
     }
 
@@ -541,9 +597,9 @@ public class CommonFunctions {
      * @param requestKey Key name of the request associated with this response
      */
 
-    public static void addPathParamsViaMap(String requestKey, Map<String, String> pathParams) {
+    public void addPathParamsViaMap(String requestKey, Map<String, String> pathParams) {
         if (!reqSpecMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
         reqSpecMap.get(requestKey).pathParams(pathParams);
@@ -555,11 +611,11 @@ public class CommonFunctions {
      * @param key The key whose value needs to get logged
      */
 
-    public static void extractValue(String key) {
+    public void extractValue(String key) {
         extractedValue.put(key, responseMap.get(latestResponseKey).jsonPath().getString(key));
     }
 
-    public static void extractValues(DataTable keys) {
+    public void extractValues(DataTable keys) {
         List<Map<String, String>> keyMaps = keys.asMaps();
         if (validateHeader(keys, "Key Path")) {
             for (Map<String, String> keyMap : keyMaps) {
@@ -567,30 +623,33 @@ public class CommonFunctions {
                 extractedValue.put(key, responseMap.get(latestResponseKey).jsonPath().getString(key));
             }
         } else {
-            logger.error("DataTable column 'Key Path' not found or empty.");
+            logger.logError("DataTable column 'Key Path' not found or empty.");
         }
     }
 
     /**
      * Function to validate header name of the datatable passed from the feature file
      *
-     * @param dataTable      dataTable which is passed from feature file
-     * @param expectedHeader expected header name
+     * @param dataTable       dataTable which is passed from feature file
+     * @param expectedHeaders expected header name
      */
-    public static boolean validateHeader(DataTable dataTable, String expectedHeader) {
-        List<String> actualHeader = dataTable.column(0);
-        if (!actualHeader.get(0).equals(expectedHeader)) {
-            logger.error("Expected header: " + expectedHeader + ", Actual header: " + actualHeader.get(0));
-            return false;
-        } else {
-            return true;
+    public boolean validateHeader(DataTable dataTable, String... expectedHeaders) {
+        boolean allHeadersFound = true;
+        for (String expectedHeader : expectedHeaders) {
+            List<String> actualHeaders = dataTable.row(0);
+            if (!actualHeaders.contains(expectedHeader)) {
+                logger.logError("Expected header: " + expectedHeader + "Not Found.");
+                allHeadersFound = false;
+                break;
+            }
         }
+        return allHeadersFound;
     }
 
 
-    public static void extractValues(DataTable keys, String requestKey) {
+    public void extractValues(DataTable keys, String requestKey) {
         if (!responseMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             return;
         }
@@ -601,7 +660,7 @@ public class CommonFunctions {
                 extractedValue.put(key, responseMap.get(latestResponseKey).jsonPath().getString(key));
             }
         } else {
-            logger.error("DataTable column 'Key Path' not found or empty.");
+            logger.logError("DataTable column 'Key Path' not found or empty.");
         }
     }
 
@@ -613,9 +672,9 @@ public class CommonFunctions {
      * @param requestKey The Response which needs to be referred to for key-value extraction
      */
 
-    public static void extractValue(String key, String requestKey) {
+    public void extractValue(String key, String requestKey) {
         if (!responseMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             return;
         }
@@ -631,7 +690,7 @@ public class CommonFunctions {
      */
 
     public void addExtractedValueToRequest(String keyToAdd, String newKeyPath, String methodBody) {
-        reqSpecMap.get(latestResponseKey).log().all().when().body(jsonBody(methodBody, environment, newKeyPath, keyToAdd, true));
+        reqSpecMap.get(latestResponseKey).log().all().when().body(jsonBody(methodBody, environment, newKeyPath, extractedValue.get(keyToAdd), true));
     }
 
 
@@ -645,7 +704,7 @@ public class CommonFunctions {
      */
 
     public void addExtractedValueToRequest(String keyToAdd, String newKeyPath, String methodBody, String requestKey) {
-        reqSpecMap.get(requestKey).log().all().when().body(jsonBody(methodBody, environment, newKeyPath, keyToAdd, true));
+        reqSpecMap.get(requestKey).log().all().when().body(jsonBody(methodBody, environment, newKeyPath, extractedValue.get(keyToAdd), true));
     }
 
     /**
@@ -684,7 +743,7 @@ public class CommonFunctions {
             try {
                 logFile.createNewFile();
             } catch (Exception e) {
-                logger.error("Failed to create logging.txt file for Logging. Please manually create a logging.txt file in src/test/java/Logs/");
+                logger.logError("Failed to create logging.txt file for Logging. Please manually create a logging.txt file in src/test/java/Logs/");
                 Assert.fail("Failed to create logging.txt file for Logging. Please manually create a logging.txt file in src/test/java/Logs/");
             }
         }
@@ -708,13 +767,13 @@ public class CommonFunctions {
      *
      * @param expectedMessage Expected Message to be found in Response Body.
      */
-    public static void verifyPresenceOfMessage(String expectedMessage) {
+    public void verifyPresenceOfMessage(String expectedMessage) {
         Response res = responseMap.get(latestResponseKey);
         String responseMessage = res.body().asPrettyString();
         if (responseMessage.contains(expectedMessage)) {
-            logger.info("Successfully found " + expectedMessage + " is Response body", true);
+            logger.logInfo("Successfully found " + expectedMessage + " is Response body");
         } else {
-            logger.error("Unable to find \"" + expectedMessage + "\" in Response body");
+            logger.logError("Unable to find \"" + expectedMessage + "\" in Response body");
             Assert.fail("Unable to find \"" + expectedMessage + "\" in Response body");
         }
     }
@@ -725,17 +784,17 @@ public class CommonFunctions {
      * @param expectedMessage Expected Message to be found in Response Body.
      * @param responseKey     Key name of the request associated with this response.
      */
-    public static void verifyPresenceOfMessage(String expectedMessage, String responseKey) {
+    public void verifyPresenceOfMessage(String expectedMessage, String responseKey) {
         if (!responseMap.containsKey(responseKey)) {
-            logger.error("No such response found. Please recheck the provided Response Key: " + responseKey);
+            logger.logError("No such response found. Please recheck the provided Response Key: " + responseKey);
             Assert.fail("No such response found. Please recheck the provided Response Key: " + responseKey);
         } else {
             Response res = responseMap.get(responseKey);
             String responseMessage = res.body().asPrettyString();
             if (responseMessage.contains(expectedMessage)) {
-                logger.info("Successfully found " + expectedMessage + " is Response body", true);
+                logger.logInfo("Successfully found " + expectedMessage + " is Response body", true);
             } else {
-                logger.error("Unable to find \"" + expectedMessage + "\" in Response body");
+                logger.logError("Unable to find \"" + expectedMessage + "\" in Response body");
                 Assert.fail("Unable to find \"" + expectedMessage + "\" in Response body");
             }
         }
@@ -746,15 +805,15 @@ public class CommonFunctions {
      *
      * @param expectedTime Maximum amount of time the API is expected to take.
      */
-    public static void verifyResponseTime(String expectedTime) {
+    public void verifyResponseTime(String expectedTime) {
         try {
             float expectedTimeInSeconds = Float.parseFloat(expectedTime);
             Response res = responseMap.get(latestResponseKey);
             long actualTime = res.getTime();
-            logger.info("Actual Time: " + actualTime + " milliseconds and expected time is: " + expectedTimeInSeconds * 1000 + " milliseconds");
+            logger.logInfo("Actual Time: " + actualTime + " milliseconds and expected time is: " + expectedTimeInSeconds * 1000 + " milliseconds");
             Assert.assertTrue("Response took longer than expected. Expected Time: At least " + expectedTimeInSeconds * 1000 + " milliseconds. Actual time: " + actualTime + " milliseconds", actualTime < expectedTimeInSeconds * 1000);
         } catch (NumberFormatException e) {
-            logger.error("Invalid time format. Please recheck.");
+            logger.logError("Invalid time format. Please recheck.");
             Assert.fail("Invalid time format. Please recheck.");
         }
     }
@@ -765,9 +824,9 @@ public class CommonFunctions {
      * @param expectedTime Maximum amount of time the API is expected to take.
      * @param responseKey  Key name of the request associated with this response.
      */
-    public static void verifyResponseTime(String expectedTime, String responseKey) {
+    public void verifyResponseTime(String expectedTime, String responseKey) {
         if (!responseMap.containsKey(responseKey)) {
-            logger.error("No such response found. Please recheck the provided Response Key: " + responseKey);
+            logger.logError("No such response found. Please recheck the provided Response Key: " + responseKey);
             Assert.fail("No such response found. Please recheck the provided Response Key: " + responseKey);
             return;
         }
@@ -775,10 +834,10 @@ public class CommonFunctions {
             float expectedTimeInSeconds = Float.parseFloat(expectedTime);
             Response res = responseMap.get(latestResponseKey);
             long actualTime = res.getTime();
-            logger.info("Actual Time: " + actualTime + " milliseconds and expected time is: " + expectedTimeInSeconds * 1000 + " milliseconds");
+            logger.logInfo("Actual Time: " + actualTime + " milliseconds and expected time is: " + expectedTimeInSeconds * 1000 + " milliseconds");
             Assert.assertTrue("Response took longer than expected. Expected Time: At least " + expectedTimeInSeconds * 1000 + " milliseconds. Actual time: " + actualTime + " milliseconds", actualTime < expectedTimeInSeconds * 1000);
         } catch (NumberFormatException e) {
-            logger.error("Invalid time format. Please recheck.");
+            logger.logError("Invalid time format. Please recheck.");
             Assert.fail("Invalid time format. Please recheck.");
         }
     }
@@ -792,7 +851,7 @@ public class CommonFunctions {
      * @param size         Expected size of the JSONArray found when traversing the JSON Path provided.
      */
 
-    public static void verifyJsonArraySize(String pathProvided, String size) {
+    public void verifyJsonArraySize(String pathProvided, String size) {
         Response res = responseMap.get(latestResponseKey);
         int arrSize = -1;
         Object valueFoundAtPath = res.jsonPath().get(pathProvided);
@@ -802,28 +861,28 @@ public class CommonFunctions {
 
             if (ObjectUtils.allNull(valueFoundAtPath)) {
                 if (expectedSize == 0) {
-                    logger.info("No array found for specified key: " + pathProvided + ". Size 0 verified.");
+                    logger.logInfo("No array found for specified key: " + pathProvided + ". Size 0 verified.");
                     return;
                 } else {
-                    logger.error("No value found for provided key: \"" + pathProvided + "\"");
+                    logger.logError("No value found for provided key: \"" + pathProvided + "\"");
                     Assert.fail("No value found for provided key: \"" + pathProvided + "\"");
                 }
             } else if (valueFoundAtPath instanceof ArrayList) {
                 ArrayList arr = (ArrayList) valueFoundAtPath;
                 arrSize = arr.size();
             } else {
-                logger.error("Value of provided key: " + pathProvided + " is not a JSONArray. Can't validate the size");
+                logger.logError("Value of provided key: " + pathProvided + " is not a JSONArray. Can't validate the size");
                 Assert.fail("Value of provided key: " + pathProvided + " is not a JSONArray. Can't validate the size");
             }
 
             if (arrSize == expectedSize) {
-                logger.info("The array with size " + expectedSize + " exists");
+                logger.logInfo("The array with size " + expectedSize + " exists");
             } else {
-                logger.error("The array with size " + expectedSize + " does not exist");
+                logger.logError("The array with size " + expectedSize + " does not exist");
                 Assert.fail("The array with size " + expectedSize + " does not exist");
             }
         } catch (NumberFormatException e) {
-            logger.error("Invalid size format. Please recheck.");
+            logger.logError("Invalid size format. Please recheck.");
             Assert.fail("Invalid size format. Please recheck.");
         }
     }
@@ -837,14 +896,14 @@ public class CommonFunctions {
      * @param size         Expected size of the JSONArray found when traversing the JSON Path provided.
      * @param responseKey  Key name of the request associated with this response.
      */
-    public static void verifyJsonArraySize(String pathProvided, int size, String responseKey) {
+    public void verifyJsonArraySize(String pathProvided, int size, String responseKey) {
         if (!responseMap.containsKey(responseKey)) {
-            logger.error("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
         }
         try {
             if (!responseMap.containsKey(responseKey)) {
-                logger.error("No such response found. Please recheck the provided Response Key: " + responseKey);
+                logger.logError("No such response found. Please recheck the provided Response Key: " + responseKey);
                 Assert.fail("No such response found. Please recheck the provided Response Key: " + responseKey);
             } else {
                 Response res = responseMap.get(responseKey);
@@ -852,30 +911,30 @@ public class CommonFunctions {
                 Object valueFoundAtPath = res.jsonPath().get(pathProvided);
                 if (ObjectUtils.allNull(valueFoundAtPath)) {
                     if (size == 0) {
-                        logger.info("No array found for specified key: " + pathProvided + ". Size 0 verified.");
+                        logger.logInfo("No array found for specified key: " + pathProvided + ". Size 0 verified.");
                         return;
                     } else {
-                        logger.error("No value found for for provided key: \"" + pathProvided + "\"");
+                        logger.logError("No value found for for provided key: \"" + pathProvided + "\"");
                         Assert.fail("No value found for for provided key: \"" + pathProvided + "\"");
                     }
                 } else if (valueFoundAtPath instanceof ArrayList) {
                     ArrayList arr = (ArrayList) valueFoundAtPath;
                     arrSize = arr.size();
                 } else {
-                    logger.error("Value of provided key: " + pathProvided + " is not a JSONArray. Can't validate the size");
+                    logger.logError("Value of provided key: " + pathProvided + " is not a JSONArray. Can't validate the size");
                     Assert.fail("Value of provided key: " + pathProvided + " is not a JSONArray. Can't validate the size");
                 }
 
                 if (arrSize == size) {
-                    logger.info("The array with size " + size + " exists");
+                    logger.logInfo("The array with size " + size + " exists");
                 } else {
-                    logger.error("The array with size " + size + " does not exist");
+                    logger.logError("The array with size " + size + " does not exist");
                     Assert.fail("The array with size " + size + " does not exist");
                 }
             }
 
         } catch (Exception e) {
-            logger.error("Invalid size format. Please recheck.");
+            logger.logError("Invalid size format. Please recheck.");
             Assert.fail("Invalid size format. Please recheck.");
         }
     }
@@ -885,7 +944,7 @@ public class CommonFunctions {
      *
      * @param verificationData DataTable containing JsonPath of Key , the corresponding operation, and Expected Value
      */
-    public static void verifyKeyValueInResponseBody(DataTable verificationData) {
+    public void verifyKeyValueInResponseBody(DataTable verificationData) {
         Response res = responseMap.get(latestResponseKey);
         JsonPath jsonPath = res.jsonPath();
         List<Map<String, String>> verificationList = verificationData.asMaps();
@@ -900,29 +959,29 @@ public class CommonFunctions {
                     actualValue = jsonPath.getString(key);
                     Assert.assertNotNull("The value of the key specified by Json Path: " + key + " was null", actualValue);
                 } catch (PathNotFoundException e) {
-                    logger.error("The Key specified by Json Path: " + key + " was not found");
+                    logger.logError("The Key specified by Json Path: " + key + " was not found");
                     Assert.fail("The Key specified by Json Path: " + key + " was not found");
                 }
 
                 switch (operation.toLowerCase()) {
                     case "equals":
                         Assert.assertEquals("Value for key '" + key + "' is not as expected", expectedValue, actualValue);
-                        logger.info("Value for key '" + key + "' is as expected: " + expectedValue);
+                        logger.logInfo("Value for key '" + key + "' is as expected: " + expectedValue);
                         break;
                     case "not equals":
                         Assert.assertNotEquals("Value for key '" + key + "' was found to be equal to : " + expectedValue, expectedValue, actualValue);
-                        logger.info("Value for key '" + key + "' does not equal: " + expectedValue);
+                        logger.logInfo("Value for key '" + key + "' does not equal: " + expectedValue);
                         break;
                     case "contains":
                         Assert.assertTrue("Value for key '" + key + "' does not contain: " + expectedValue, actualValue.contains(expectedValue));
-                        logger.info("Value for key '" + key + "' contains: " + expectedValue);
+                        logger.logInfo("Value for key '" + key + "' contains: " + expectedValue);
                         break;
                     case "not contains":
                         Assert.assertFalse("Value for key '" + key + "' contains: " + expectedValue, actualValue.contains(expectedValue));
-                        logger.info("Value for key '" + key + "' does not contain: " + expectedValue);
+                        logger.logInfo("Value for key '" + key + "' does not contain: " + expectedValue);
                         break;
                     default:
-                        logger.info("Unsupported operation: " + operation);
+                        logger.logInfo("Unsupported operation: " + operation);
                         Assert.fail("Unsupported operation: " + operation);
                 }
             }
@@ -936,9 +995,9 @@ public class CommonFunctions {
      * @param responseKey      Key name of the request associated with this response.
      */
 
-    public static void verifyKeyValueInResponseBody(DataTable verificationData, String responseKey) {
+    public void verifyKeyValueInResponseBody(DataTable verificationData, String responseKey) {
         if (!responseMap.containsKey(responseKey)) {
-            logger.error("No such response found. Please recheck the provided Response Key: " + responseKey);
+            logger.logError("No such response found. Please recheck the provided Response Key: " + responseKey);
             Assert.fail("No such response found. Please recheck the provided Response Key: " + responseKey);
         }
         Response res = responseMap.get(responseKey);
@@ -956,29 +1015,29 @@ public class CommonFunctions {
                     actualValue = jsonPath.getString(key);
                     Assert.assertNotNull("The value of the key specified by Json Path: " + key + " was null", actualValue);
                 } catch (PathNotFoundException e) {
-                    logger.error("The Key specified by Json Path: " + key + " was not found");
+                    logger.logError("The Key specified by Json Path: " + key + " was not found");
                     Assert.fail("The Key specified by Json Path: " + key + " was not found");
                 }
 
                 switch (operation.toLowerCase()) {
                     case "equals":
                         Assert.assertEquals("Value for key '" + key + "' is not as expected", expectedValue, actualValue);
-                        logger.info("Value for key '" + key + "' is as expected: " + expectedValue);
+                        logger.logInfo("Value for key '" + key + "' is as expected: " + expectedValue);
                         break;
                     case "not equals":
                         Assert.assertNotEquals("Value for key '" + key + "' was found to be equal to : " + expectedValue, expectedValue, actualValue);
-                        logger.info("Value for key '" + key + "' does not equal: " + expectedValue);
+                        logger.logInfo("Value for key '" + key + "' does not equal: " + expectedValue);
                         break;
                     case "contains":
                         Assert.assertTrue("Value for key '" + key + "' does not contain: " + expectedValue, actualValue.contains(expectedValue));
-                        logger.info("Value for key '" + key + "' contains: " + expectedValue);
+                        logger.logInfo("Value for key '" + key + "' contains: " + expectedValue);
                         break;
                     case "not contains":
                         Assert.assertFalse("Value for key '" + key + "' contains: " + expectedValue, actualValue.contains(expectedValue));
-                        logger.info("Value for key '" + key + "' does not contain: " + expectedValue);
+                        logger.logInfo("Value for key '" + key + "' does not contain: " + expectedValue);
                         break;
                     default:
-                        logger.info("Unsupported operation: " + operation);
+                        logger.logInfo("Unsupported operation: " + operation);
                         Assert.fail("Unsupported operation: " + operation);
                 }
             }
@@ -995,11 +1054,11 @@ public class CommonFunctions {
      * @param pathProvided  JSON Path of the parent JSON Array.
      * @param expectedValue Value of item expected to be found in the JSON Array found using the provided JSON Path.
      */
-    public static void verifyValueInJsonArray(String pathProvided, String expectedValue) {
+    public void verifyValueInJsonArray(String pathProvided, String expectedValue) {
         Response res = responseMap.get(latestResponseKey);
         Object valueFoundAtPath = res.jsonPath().get(pathProvided);
         if (ObjectUtils.allNull(valueFoundAtPath)) {
-            logger.error("No value found for for provided key: \"" + pathProvided + "\"");
+            logger.logError("No value found for for provided key: \"" + pathProvided + "\"");
             Assert.fail("No value found for for provided key: \"" + pathProvided + "\"");
         } else if (valueFoundAtPath instanceof ArrayList) {
             ArrayList arr = (ArrayList) valueFoundAtPath;
@@ -1010,21 +1069,21 @@ public class CommonFunctions {
                     if (found) break;
                 }
                 if (!found) {
-                    logger.error("Couldn't find " + expectedValue + " in response for provided key: \"" + pathProvided + "\"");
+                    logger.logError("Couldn't find " + expectedValue + " in response for provided key: \"" + pathProvided + "\"");
                     Assert.fail("Couldn't find " + expectedValue + " in response for provided key: \"" + pathProvided + "\"");
                 }
             } else {
-                logger.error("Value for provided key: " + pathProvided + " is a JSONArray of JSONObjects. Can't validate the value");
+                logger.logError("Value for provided key: " + pathProvided + " is a JSONArray of JSONObjects. Can't validate the value");
                 Assert.fail("Value for provided key: " + pathProvided + " is a JSONArray of JSONObjects. Can't validate the value");
             }
         } else {
-            logger.error("Value for provided key: " + pathProvided + " is not a JSONArray. Can't validate the value");
+            logger.logError("Value for provided key: " + pathProvided + " is not a JSONArray. Can't validate the value");
             Assert.fail("Value for provided key: " + pathProvided + " is not a JSONArray. Can't validate the value");
         }
         if (pathProvided.split("\\.").length == 1)
-            logger.info("Successfully verified presence of " + expectedValue + " in response for provided key: \"" + pathProvided + "\"");
+            logger.logInfo("Successfully verified presence of " + expectedValue + " in response for provided key: \"" + pathProvided + "\"");
         else
-            logger.info("Successfully verified presence of " + expectedValue + " in response for provided path: \"" + pathProvided + "\"");
+            logger.logInfo("Successfully verified presence of " + expectedValue + " in response for provided path: \"" + pathProvided + "\"");
     }
 
     /**
@@ -1038,16 +1097,16 @@ public class CommonFunctions {
      * @param expectedValue Value of item expected to be found in the JSON Array found using the provided JSON Path.
      * @param responseKey   Key name of the request associated with this response.
      */
-    public static void verifyValueInJsonArray(String pathProvided, String expectedValue, String responseKey) {
+    public void verifyValueInJsonArray(String pathProvided, String expectedValue, String responseKey) {
         if (!responseMap.containsKey(responseKey)) {
-            logger.error("No such response found. Please recheck the provided Response Key: " + responseKey);
+            logger.logError("No such response found. Please recheck the provided Response Key: " + responseKey);
             Assert.fail("No such response found. Please recheck the provided Response Key: " + responseKey);
         }
         Response res = responseMap.get(responseKey);
         Object valueFoundAtPath = res.jsonPath().get(pathProvided);
 
         if (ObjectUtils.allNull(valueFoundAtPath)) {
-            logger.error("No value found for the provided key: \"" + pathProvided + "\"");
+            logger.logError("No value found for the provided key: \"" + pathProvided + "\"");
             Assert.fail("No value found for the provided key: \"" + pathProvided + "\"");
         } else if (valueFoundAtPath instanceof ArrayList) {
             ArrayList arr = (ArrayList) valueFoundAtPath;
@@ -1060,22 +1119,22 @@ public class CommonFunctions {
                 }
 
                 if (!found) {
-                    logger.error("Couldn't find " + expectedValue + " in response for the provided key: \"" + pathProvided + "\"");
+                    logger.logError("Couldn't find " + expectedValue + " in response for the provided key: \"" + pathProvided + "\"");
                     Assert.fail("Couldn't find " + expectedValue + " in response for the provided key: \"" + pathProvided + "\"");
                 }
             } else {
-                logger.error("Value for the provided key: " + pathProvided + " is a JSONArray of JSONObjects. Can't validate the value");
+                logger.logError("Value for the provided key: " + pathProvided + " is a JSONArray of JSONObjects. Can't validate the value");
                 Assert.fail("Value for the provided key: " + pathProvided + " is a JSONArray of JSONObjects. Can't validate the value");
             }
         } else {
-            logger.error("Value for the provided key: " + pathProvided + " is not a JSONArray. Can't validate the value");
+            logger.logError("Value for the provided key: " + pathProvided + " is not a JSONArray. Can't validate the value");
             Assert.fail("Value for the provided key: " + pathProvided + " is not a JSONArray. Can't validate the value");
         }
 
         if (pathProvided.split("\\.").length == 1)
-            logger.info("Successfully verified presence of " + expectedValue + " in response for the provided key: \"" + pathProvided + "\"");
+            logger.logInfo("Successfully verified presence of " + expectedValue + " in response for the provided key: \"" + pathProvided + "\"");
         else
-            logger.info("Successfully verified presence of " + expectedValue + " in response for the provided path: \"" + pathProvided + "\"");
+            logger.logInfo("Successfully verified presence of " + expectedValue + " in response for the provided path: \"" + pathProvided + "\"");
 
     }
 
@@ -1084,26 +1143,26 @@ public class CommonFunctions {
      *
      * @param schemaName Name of the Schema which is to be referred to for comparison. Must be in the src\test\resources\schemas directory.
      */
-    public static void verifyResponseSchema(String schemaName) {
+    public void verifyResponseSchema(String schemaName) {
         Response res = responseMap.get(latestResponseKey);
         try {
             res.then().assertThat().body(JsonSchemaValidator.matchesJsonSchema(new File(System.getProperty("user.dir") + "\\src\\test\\resources\\schemas\\" + schemaName + ".json")));
         } catch (Exception e) {
             if (e.getMessage().contains("JsonMappingException") || e.getMessage().contains("IOException")) {
-                logger.error("Failed to validate Schema. Body may not match expectations. Exception: " + e.getMessage());
+                logger.logError("Failed to validate Schema. Body may not match expectations. Exception: " + e.getMessage());
                 Assert.fail("Failed to validate Schema. Body may not match expectations. Exception: " + e.getMessage());
             } else if (e.getMessage().contains("FileNotFoundException")) {
-                logger.error("Failed to validate Schema. Could not find the reference Schema");
+                logger.logError("Failed to validate Schema. Could not find the reference Schema");
                 Assert.fail("Failed to validate Schema. Could not find the reference Schema");
             } else if (e.getMessage().contains("JsonParseException")) {
-                logger.error("Failed to validate Schema. Reference Schema is invalid");
+                logger.logError("Failed to validate Schema. Reference Schema is invalid");
                 Assert.fail("Failed to validate Schema. Reference Schema is invalid");
             } else {
-                logger.error("Failed to validate Schema due to Exception: " + e);
+                logger.logError("Failed to validate Schema due to Exception: " + e);
                 Assert.fail("Failed to validate Schema due to Exception: " + e);
             }
         }
-        logger.info("Response Schema verified successfully.");
+        logger.logInfo("Response Schema verified successfully.");
     }
 
     /**
@@ -1112,14 +1171,14 @@ public class CommonFunctions {
      * @param schemaName  Name of the Schema which is to be referred to for comparison. Must be in the src\test\resources\schemas directory.
      * @param responseKey Key name of the request associated with this response
      */
-    public static void verifyResponseSchema(String schemaName, String responseKey) {
+    public void verifyResponseSchema(String schemaName, String responseKey) {
         if (!responseMap.containsKey(responseKey)) {
-            logger.error("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
         }
 
         if (!responseMap.containsKey(responseKey)) {
-            logger.error("No such response found. Please recheck the provided Response Key: " + responseKey);
+            logger.logError("No such response found. Please recheck the provided Response Key: " + responseKey);
             Assert.fail("No such response found. Please recheck the provided Response Key: " + responseKey);
         } else {
             Response res = responseMap.get(responseKey);
@@ -1127,15 +1186,15 @@ public class CommonFunctions {
                 res.then().assertThat().body(JsonSchemaValidator.matchesJsonSchema(new File(System.getProperty("user.dir") + "\\src\\test\\resources\\schemas\\" + schemaName + ".json")));
             } catch (Exception e) {
                 if (e instanceof JsonMappingException || e instanceof FileNotFoundException || e instanceof IOException) {
-                    logger.error("Failed to validate Schema. Body may not match expectations. Exception: " + e);
+                    logger.logError("Failed to validate Schema. Body may not match expectations. Exception: " + e);
                     Assert.fail("Failed to validate Schema. Body may not match expectations. Exception: " + e);
                 } else {
-                    logger.error("Failed to validate Schema due to Exception: " + e);
+                    logger.logError("Failed to validate Schema due to Exception: " + e);
                     Assert.fail("Failed to validate Schema due to Exception: " + e);
                 }
             }
         }
-        logger.info("Response Schema verified successfully.");
+        logger.logInfo("Response Schema verified successfully.");
     }
 
 
@@ -1144,7 +1203,7 @@ public class CommonFunctions {
      *
      * @param encodingStatus Toggle to set encoding on or off.
      */
-    public static void setUrlEncoding(boolean encodingStatus) {
+    public void setUrlEncoding(boolean encodingStatus) {
         reqSpecMap.get(latestResponseKey).urlEncodingEnabled(encodingStatus);
     }
 
@@ -1154,9 +1213,9 @@ public class CommonFunctions {
      * @param encodingStatus Toggle to set encoding on or off.
      * @param requestKey     Key name of the request associated with this response
      */
-    public static void setUrlEncoding(boolean encodingStatus, String requestKey) {
+    public void setUrlEncoding(boolean encodingStatus, String requestKey) {
         if (!reqSpecMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
 
@@ -1166,7 +1225,7 @@ public class CommonFunctions {
     /**
      * Configures the latest RequestSpecification to use relaxed HTTP validation
      */
-    public static void setRelaxedHttpsValidation() {
+    public void setRelaxedHttpsValidation() {
         reqSpecMap.get(latestResponseKey).relaxedHTTPSValidation();
     }
 
@@ -1175,12 +1234,11 @@ public class CommonFunctions {
      *
      * @param requestKey Key name of the request associated with this response
      */
-    public static void setRelaxedHttpsValidation(String requestKey) {
+    public void setRelaxedHttpsValidation(String requestKey) {
         if (!reqSpecMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
-
         reqSpecMap.get(requestKey).relaxedHTTPSValidation();
     }
 
@@ -1192,9 +1250,9 @@ public class CommonFunctions {
      * @param controlName Control Name of the file to be uploaded
      * @param filename    Name of the file to be uploaded. Must be in the src/test/resources/multipartfiles directory.
      */
-    public static void addMultipartFileToRequest(String controlName, String filename) {
+    public void addMultipartFileToRequest(String controlName, String filename) {
         if (filename.split("\\.").length == 1) {
-            logger.error("No File extension detected. Please provide filename with extension");
+            logger.logError("No File extension detected. Please provide filename with extension");
             Assert.fail("No File extension detected. Please provide filename with extension");
         }
         File file = new File("src/test/resources/multipartfiles/" + filename);
@@ -1210,14 +1268,14 @@ public class CommonFunctions {
      * @param filename    Name of the file to be uploaded. Must be in the src/test/resources/multipartfiles directory.
      * @param requestKey  Key name of the request associated with this response
      */
-    public static void addMultipartFileToRequest(String controlName, String filename, String requestKey) {
+    public void addMultipartFileToRequest(String controlName, String filename, String requestKey) {
         if (!reqSpecMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
 
         if (filename.split("\\.").length == 1) {
-            logger.error("No File extension detected. Please provide filename with extension");
+            logger.logError("No File extension detected. Please provide filename with extension");
             Assert.fail("No File extension detected. Please provide filename with extension");
         }
 
@@ -1233,9 +1291,9 @@ public class CommonFunctions {
      * @param filename    Name of the file to be uploaded. Must be in the src/test/resources/multipartfiles directory.
      * @param mimeType    MIME type of the file to be uploaded
      */
-    public static void addMultipartFileToRequestWithMIMEType(String controlName, String filename, String mimeType) {
+    public void addMultipartFileToRequestWithMIMEType(String controlName, String filename, String mimeType) {
         if (filename.split("\\.").length == 1) {
-            logger.error("No File extension detected. Please provide filename with extension");
+            logger.logError("No File extension detected. Please provide filename with extension");
             Assert.fail("No File extension detected. Please provide filename with extension");
         }
         File file = new File("src/test/resources/multipartfiles/" + filename);
@@ -1251,14 +1309,15 @@ public class CommonFunctions {
      * @param mimeType    MIME type of the file to be uploaded
      * @param requestKey  Key name of the request associated with this response
      */
-    public static void addMultipartFileToRequestWithMIMEType(String filename, String controlName, String mimeType, String requestKey) {
+    public void addMultipartFileToRequestWithMIMEType(String filename, String controlName, String mimeType, String
+            requestKey) {
         if (!reqSpecMap.containsKey(requestKey)) {
-            logger.error("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+            logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
 
         if (filename.split("\\.").length == 1) {
-            logger.error("No File extension detected. Please provide filename with extension");
+            logger.logError("No File extension detected. Please provide filename with extension");
             Assert.fail("No File extension detected. Please provide filename with extension");
         }
 
@@ -1272,7 +1331,7 @@ public class CommonFunctions {
      * @param key         Key of the particular json body which will be passed as a request
      * @param environment Data is fetched from files based on the environment
      */
-    public static String jsonBody(String key, String environment) {
+    public String jsonBody(String key, String environment) {
         String fileName = environment + "_data.json";
         try {
             String fullPath = System.getProperty("user.dir") + "//src//test//resources//requestbodies//" + fileName;
@@ -1280,7 +1339,7 @@ public class CommonFunctions {
             try {
                 jsonContent = new String(Files.readAllBytes(Paths.get(fullPath)));
             } catch (Exception e) {
-                logger.info("Unknown environment: " + environment);
+                logger.logInfo("Unknown environment: " + environment);
                 Assert.fail("Unknown environment: " + environment);
             }
 
@@ -1297,7 +1356,7 @@ public class CommonFunctions {
                 throw new IllegalArgumentException("JSON object with key '" + key + "' not found in the JSON file");
             }
         } catch (IOException e) {
-            logger.error("No such file found in directory: " + fileName);
+            logger.logError("No such file found in directory: " + fileName);
             Assert.fail("No such file found in directory: " + fileName);
             return null;
         }
@@ -1313,24 +1372,8 @@ public class CommonFunctions {
      * @param newKeyPath  The Json Path of the new key that is to be added
      * @param keyToAdd    The key whose value is fetched from another response and needs to be added in the body of new request
      */
-//    public static String jsonBody(String key, String environment, String newKeyPath, String keyToAdd) {
-//        String fileName = environment.toLowerCase() + "_data.json";
-//        try {
-//            String fullPath = System.getProperty("user.dir") + "//src//test//resources//requestbodies//" + fileName;
-//            String jsonContent = new String(Files.readAllBytes(Paths.get(fullPath)));
-//            JSONObject parentObject = new JSONObject(jsonContent);
-//            JSONObject jsonObject = parentObject.getJSONObject(key);
-//            Configuration conf = Configuration.defaultConfiguration().addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL).addOptions(Option.SUPPRESS_EXCEPTIONS);
-//            DocumentContext documentContext = com.jayway.jsonpath.JsonPath.using(conf).parse(jsonObject.toString(2));
-//            documentContext.set(com.jayway.jsonpath.JsonPath.compile(newKeyPath), extractedValue.get(keyToAdd));
-//            return documentContext.jsonString();
-//        } catch (IOException e) {
-//            logger.error("No such file found in directory: " + fileName);
-//            Assert.fail("No such file found in directory: " + fileName);
-//            return null;
-//        }
-//    }
-    public static String jsonBody(String key, String environment, String newKeyPath, String keyToAdd, boolean overwrite) {
+
+    public String jsonBody(String key, String environment, String newKeyPath, String keyToAdd, boolean overwrite) {
         String fileName = environment.toLowerCase() + "_data.json";
         try {
             String fullPath = System.getProperty("user.dir") + "//src//test//resources//requestbodies//" + fileName;
@@ -1338,26 +1381,74 @@ public class CommonFunctions {
             JSONObject parentObject = new JSONObject(jsonContent);
             JSONObject jsonObject = parentObject.getJSONObject(key);
 
-            Configuration conf = Configuration.defaultConfiguration().addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL).addOptions(Option.SUPPRESS_EXCEPTIONS);
-            DocumentContext documentContext = com.jayway.jsonpath.JsonPath.using(conf).parse(jsonObject.toString(2));
-            documentContext.set(com.jayway.jsonpath.JsonPath.compile(newKeyPath), extractedValue.get(keyToAdd));
+            // Split the newKeyPath to navigate through the JSON structure
+            String[] keys = newKeyPath.split("\\.");
+            JSONObject nestedObject = jsonObject;
 
-            // Check if the key already exists and whether to overwrite it.
-            if (overwrite) {
-                jsonObject.put(newKeyPath, keyToAdd);
-                // Update the JSON content in memory.
-                parentObject.put(key, jsonObject);
-                // Write the updated JSON content back to the file.
-                try (FileWriter fileWriter = new FileWriter(fullPath)) {
-                    fileWriter.write(parentObject.toString(2));
-                    fileWriter.flush(); // Ensure the data is written immediately.
+            for (int i = 0; i < keys.length - 1; i++) {
+                String pathPart = keys[i];
+                if (pathPart.contains("[")) {
+                    // Handle array indexing
+                    String arrayName = pathPart.substring(0, pathPart.indexOf("["));
+                    int index = Integer.parseInt(pathPart.replaceAll("[^0-9]", ""));
+
+                    if (nestedObject.has(arrayName) && nestedObject.get(arrayName) instanceof JSONArray) {
+                        JSONArray jsonArray = nestedObject.getJSONArray(arrayName);
+
+                        if (index >= 0 && index < jsonArray.length()) {
+                            nestedObject = jsonArray.getJSONObject(index);
+                        } else if (index == jsonArray.length()) {
+                            // If the index is one greater than the current length, create a new object
+                            JSONObject newObject = new JSONObject();
+                            jsonArray.put(newObject);
+                            nestedObject = newObject;
+                        } else {
+                            // Handle invalid index
+                            logger.logError("Invalid index in key path: " + newKeyPath);
+                            Assert.fail("Invalid index in key path: " + newKeyPath);
+                            return null;
+                        }
+                    } else {
+                        // Handle array not found; create a new array and object
+                        JSONArray newArray = new JSONArray();
+                        JSONObject newObject = new JSONObject();
+                        newArray.put(newObject);
+                        nestedObject.put(arrayName, newArray);
+                        nestedObject = newObject;
+                    }
+                } else {
+                    // Handle object properties
+                    if (nestedObject.has(pathPart)) {
+                        nestedObject = nestedObject.getJSONObject(pathPart);
+                    } else {
+                        // Handle key not found; create a new object
+                        JSONObject newObject = new JSONObject();
+                        nestedObject.put(pathPart, newObject);
+                        nestedObject = newObject;
+                    }
                 }
             }
 
-            // Return the updated JSON string.
-            return documentContext.jsonString();
+            // Extract the key to update from the last part of newKeyPath
+            String keyToUpdate = keys[keys.length - 1];
+
+            // Update the value of the extracted key in the nested JSON object
+            nestedObject.put(keyToUpdate, keyToAdd);
+
+            // Update the JSON content in memory
+            parentObject.put(key, jsonObject);
+
+            // Write the updated JSON content back to the file if overwrite is true
+            if (overwrite) {
+                try (FileWriter fileWriter = new FileWriter(fullPath)) {
+                    fileWriter.write(parentObject.toString(2));
+                    fileWriter.flush(); // Ensure the data is written immediately
+                }
+            }
+
+            return parentObject.getJSONObject(key).toString(2);
         } catch (IOException e) {
-            logger.error("No such file found in directory: " + fileName);
+            logger.logError("No such file found in directory: " + fileName);
             Assert.fail("No such file found in directory: " + fileName);
             return null;
         }
@@ -1368,17 +1459,19 @@ public class CommonFunctions {
      * Adds basic authentication to the latest request
      * Fetches credentials from serenity.conf file
      */
-    public static void addBasicAuth() {
+    public void addBasicAuth() {
         String username = EnvironmentSpecificConfiguration.from(variables).getProperty("username");
         String password = new String(Base64.decode(Unpooled.wrappedBuffer(EnvironmentSpecificConfiguration.from(variables).getProperty("password").getBytes())).array());
         reqSpecMap.get(latestResponseKey).auth().basic(username, password);
     }
 
     /**
-     * Adds basic authentication to the specified request
+     * Adds basic authentication to the latest request
      * Fetches credentials from serenity.conf file
+     *
+     * @param requestKey Key name of the request associated with this response
      */
-    public static void addBasicAuth(String requestKey) {
+    public void addBasicAuth(String requestKey) {
         String username = EnvironmentSpecificConfiguration.from(variables).getProperty("username");
         String password = new String(Base64.decode(Unpooled.wrappedBuffer(EnvironmentSpecificConfiguration.from(variables).getProperty("password").getBytes())).array());
         reqSpecMap.get(requestKey).auth().basic(username, password);
@@ -1388,7 +1481,7 @@ public class CommonFunctions {
      * Adds bearer authentication to the latest request
      * Fetches Bearer token from serenity.conf file
      */
-    public static void addBearerAuth() {
+    public void addBearerAuth() {
         String token = UtilStepDefinition.generateAccessToken();
         // The above function can be modified to generate a Bearer token. Modify the input parameters accordingly, and comment out the next line.
         reqSpecMap.get(latestResponseKey).headers("Authorization", "Bearer " + token);
@@ -1398,7 +1491,7 @@ public class CommonFunctions {
      * Adds bearer authentication to the latest request
      * Fetches Bearer token from serenity.conf file
      */
-    public static void addBearerAuth(String requestKey) {
+    public void addBearerAuth(String requestKey) {
         String token = UtilStepDefinition.generateAccessToken();
         // The above function can be modified to generate a Bearer token. Modify the input parameters accordingly, and comment out the next line.
         reqSpecMap.get(requestKey).headers("Authorization", "Bearer " + token);
@@ -1465,7 +1558,7 @@ public class CommonFunctions {
      *
      * @return type Of Json
      */
-    public static String typeJSON() throws IOException {
+    public String typeJSON() throws IOException {
         FileReader reader = new FileReader("src/test/resources/serenity.properties");
         Properties p = new Properties();
         p.load(reader);
@@ -1508,7 +1601,7 @@ public class CommonFunctions {
      * @return JsonObject
      */
 
-    public static JSONObject getExpectedJsonObject() {
+    public JSONObject getExpectedJsonObject() {
 
         //converting expected json string to a json object
         JSONObject obj = new JSONObject(expectedJson);
@@ -1521,7 +1614,7 @@ public class CommonFunctions {
      * @return Json Object
      */
 
-    public static JSONObject getResultJsonObject() {
+    public JSONObject getResultJsonObject() {
         //response string to json object
         JSONObject obj2 = new JSONObject(res);
         return obj2;
@@ -1533,7 +1626,7 @@ public class CommonFunctions {
      * @return :Json Array
      */
 
-    public static JSONArray getExpectedJSONArray() {
+    public JSONArray getExpectedJSONArray() {
         JSONArray obj = new JSONArray(expectedJson);
         return obj;
     }
@@ -1544,7 +1637,7 @@ public class CommonFunctions {
      * @return :Json Array
      */
 
-    public static JSONArray getResultJSONArray() {
+    public JSONArray getResultJSONArray() {
         JSONArray obj = new JSONArray(res);
         return obj;
     }
@@ -1557,7 +1650,7 @@ public class CommonFunctions {
      * @return HashSet of Values after Comparison
      */
 
-    public static HashSet<String> compareJsonObject(JSONObject expected, JSONObject result) {
+    public HashSet<String> compareJsonObject(JSONObject expected, JSONObject result) {
         mismatchComments = new HashSet<>();
         mismatchedFinal = new HashMap<>();
         mismatchInJson1Keys = new ArrayList<>();
@@ -1587,7 +1680,7 @@ public class CommonFunctions {
      * @param result   Actual Json Array
      * @return HashSet of Values after Comparison
      */
-    public static HashSet<String> compareJsonArray(JSONArray expected, JSONArray result) {
+    public HashSet<String> compareJsonArray(JSONArray expected, JSONArray result) {
         mismatchComments = new HashSet<>();
         mismatchedFinal = new HashMap<>();
         mismatchInJson1Keys = new ArrayList<>();
@@ -1608,7 +1701,7 @@ public class CommonFunctions {
      * @param result Hashset of result of Json Differences
      */
 
-    public static void updateReport(HashSet<String> result) {
+    public void updateReport(HashSet<String> result) {
         if (result.size() != 0) {
             System.out.println("Differences found in Expected JSON and Observed JSON !!");
             Serenity.recordReportData().withTitle("Differences found in JSON").andContents((result.toString().substring(1, result.toString().length() - 1).replaceAll(",", ",\n")));
@@ -1623,7 +1716,7 @@ public class CommonFunctions {
      *
      * @param data Type of Data
      */
-    public static String getType(Object data) {
+    public String getType(Object data) {
         String type = data.getClass().toString();
         if (type.contains("HashMap"))
             return "Map";
@@ -1644,7 +1737,7 @@ public class CommonFunctions {
     /**
      * Function for compiling the differences into a single HashSet and returning it
      */
-    public static HashSet<String> returnResult() {
+    public HashSet<String> returnResult() {
         finalResult = new HashSet<>();
 
         finalResult.addAll(mismatchComments);
@@ -1670,7 +1763,7 @@ public class CommonFunctions {
      * @param comparisonList List from which other list are compared
      */
 
-    public static void compareArrayList(ArrayList<Object> comparisonList, ArrayList<Object> listToCompare) {
+    public void compareArrayList(ArrayList<Object> comparisonList, ArrayList<Object> listToCompare) {
         int i = 0;
         int j = 0;
         if (comparisonList.size() == listToCompare.size()) {
@@ -1755,7 +1848,7 @@ public class CommonFunctions {
      * @param resultMap   Hashmap of result json
      */
 
-    public static void compareValue(String currKey, Map<String, Object> resultMap, Map<String, Object> expectedMap) {
+    public void compareValue(String currKey, Map<String, Object> resultMap, Map<String, Object> expectedMap) {
         //get the values for current key from both maps
         Object resValue = resultMap.get(currKey);
         Object exValue = expectedMap.get(currKey);
@@ -1814,7 +1907,7 @@ public class CommonFunctions {
      * @param mapToCompare  Actual map that needs to be compared
      */
 
-    public static ArrayList<String> compareKeys(Map<String, Object> comparisonMap, Map<String, Object> mapToCompare) {
+    public ArrayList<String> compareKeys(Map<String, Object> comparisonMap, Map<String, Object> mapToCompare) {
         Iterator<String> mapKeys = mapToCompare.keySet().iterator();
         ArrayList<String> temp = new ArrayList<>();
         boolean flag = false;
@@ -1838,7 +1931,7 @@ public class CommonFunctions {
      * @param expectedMap Expected Map
      */
 
-    public static void matchKeys(Map<String, Object> resultMap, Map<String, Object> expectedMap) {
+    public void matchKeys(Map<String, Object> resultMap, Map<String, Object> expectedMap) {
         //if the keySet in both maps are unequal go ahead to match their keys further
         if (!resultMap.keySet().equals(expectedMap.keySet())) {
             //gets the keys that are missing in result json and adds to final hashmap
@@ -1869,7 +1962,7 @@ public class CommonFunctions {
      * @param expectedMap – Expected map
      */
 
-    public static void matchValues(Map<String, Object> resultMap, Map<String, Object> expectedMap) {
+    public void matchValues(Map<String, Object> resultMap, Map<String, Object> expectedMap) {
         Iterator<String> expectedMapKeys = expectedMap.keySet().iterator();
         Iterator<String> resultMapKeys = resultMap.keySet().iterator();
 
@@ -1885,7 +1978,9 @@ public class CommonFunctions {
      * Function to match json Values
      */
 
-    public static void matchJsonValues(Map<String, Object> resultMap, Map<String, Object> expectedMap, Iterator<String> it, Object mismatchedKeys) {
+    public void matchJsonValues
+    (Map<String, Object> resultMap, Map<String, Object> expectedMap, Iterator<String> it, Object
+            mismatchedKeys) {
         List<String> keysNotToMatch;
 
         //if there are some keys to be omitted
@@ -1914,7 +2009,7 @@ public class CommonFunctions {
      *
      * @param jsonObj JsonObject to be converted into Map
      */
-    public static Map<String, Object> toMap(JSONObject jsonObj) throws JSONException {
+    public Map<String, Object> toMap(JSONObject jsonObj) throws JSONException {
         Map<String, Object> map = new HashMap<>();
 
         //iterating through the keys of passed json object
@@ -1942,7 +2037,7 @@ public class CommonFunctions {
      *
      * @param jsonArray JsonArray to be converted into list
      */
-    public static List<Object> toList(JSONArray jsonArray) throws JSONException {
+    public List<Object> toList(JSONArray jsonArray) throws JSONException {
         List<Object> list = new ArrayList<>();
         //for each value in the list
         for (int i = 0; i < jsonArray.length(); i++) {

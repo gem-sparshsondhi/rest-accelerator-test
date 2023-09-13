@@ -10,23 +10,28 @@ Headers:		Accept=*/*
 Cookies:		<none>
 Multiparts:		<none>
 Body:
-{"surname":"David","name":"morpheus","job":"leader","email":"janet.weaver@reqres.in"}
+{
+  "data": {"email": "janet.weaver@reqres.in"},
+  "surname": "David",
+  "name": "morpheus",
+  "job": "leader"
+}
 HTTP/1.1 201 Created
-Date: Tue, 05 Sep 2023 15:02:12 GMT
+Date: Wed, 13 Sep 2023 10:01:39 GMT
 Content-Type: application/json; charset=utf-8
-Content-Length: 50
+Content-Length: 51
 Connection: keep-alive
 X-Powered-By: Express
 Access-Control-Allow-Origin: *
-Etag: W/"32-5ItbF1PHYO7P/xW1XNV/A0MyOho"
+Etag: W/"33-qNicWqVUUXQbhcoyADzgOKd42Uc"
 Via: 1.1 vegur
 CF-Cache-Status: DYNAMIC
-Report-To: {"endpoints":[{"url":"https:\/\/a.nel.cloudflare.com\/report\/v3?s=%2FhKLaAk1Zu12%2FE9dT2WzujjriWtOFMh0mWqatKXoV3EijMp5YZkPyZbI1z6yGLcIirMrAqzbIgy%2Fp%2BdO1RXmUxTqBxJsZyCaG6rq1Xm8MUQyKRQsGSdB2oNqKQ%3D%3D"}],"group":"cf-nel","max_age":604800}
+Report-To: {"endpoints":[{"url":"https:\/\/a.nel.cloudflare.com\/report\/v3?s=Q5MR%2BfOt1DB7eD0UcHJNfqJf1aqTGKh0fH86%2FyUh%2FZR32rEYLg43hQjJwzHG54o7SYUBJ3Vzc2R0k3IqZsN3%2BsuTmBdbcDW0vB997OB09F0CP1ntxHwrsvsOGg%3D%3D"}],"group":"cf-nel","max_age":604800}
 NEL: {"success_fraction":0,"report_to":"cf-nel","max_age":604800}
 Server: cloudflare
-CF-RAY: 801f5a18bdf9a74d-IXC
+CF-RAY: 805f8cd3bebb8fb3-KNU
 
 {
-    "id": "75",
-    "createdAt": "2023-09-05T15:02:12.843Z"
+    "id": "157",
+    "createdAt": "2023-09-13T10:01:39.404Z"
 }
