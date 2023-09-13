@@ -19,7 +19,7 @@ Feature: Test
     When user adds headers to "PostData" request
       | Header Name | Header Value |
       | Accept      | */*          |
-    When user adds extracted value of key "data.email" at "data.email" path in "POSTReqBody" request body
+    When user adds extracted value of key "data.email" at "data[0].email" path in "POSTReqBody" request body
     When user sends "POST" request for "PostData" request
     Then user verifies "201" status code
 
