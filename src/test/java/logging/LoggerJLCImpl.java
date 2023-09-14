@@ -2,8 +2,8 @@ package logging;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public class EnableJLCLogging implements LoggerUtils {
-    private static final Log logger = LogFactory.getLog(EnableJLCLogging.class);
+public class LoggerJLCImpl implements LoggerUtils {
+    private static final Log logger = LogFactory.getLog(LoggerJLCImpl.class);
 
     @Override
     public void logInfo(String message) {

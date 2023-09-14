@@ -12,8 +12,8 @@ import io.restassured.module.jsv.JsonSchemaValidator;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
-import logging.EnableJLCLogging;
-import logging.EnableSlf4jLogging;
+import logging.LoggerJLCImpl;
+import logging.LoggerSL4jImpl;
 import logging.LoggerUtils;
 import net.serenitybdd.core.Serenity;
 import net.serenitybdd.core.environment.EnvironmentSpecificConfiguration;
@@ -41,7 +41,6 @@ import java.util.*;
 public class CommonFunctions {
     private LoggerUtils logger = logger();
     public Reporting reporting = reporting();
-
     public HashMap<String, RequestSpecification> reqSpecMap = new HashMap<>();
     public HashMap<String, Response> responseMap = new HashMap<>();
     public String latestResponseKey = "";
@@ -87,7 +86,7 @@ public class CommonFunctions {
         Properties properties;
         try {
             properties = new Properties();
-            InputStream inputStream = getClass().getClassLoader().getResourceAsStream("config.properties");
+            InputStream inputStream = CommonFunctions.class.getClassLoader().getResourceAsStream("config.properties");
             properties.load(inputStream);
             String reportingType = properties.getProperty("ReportingType");
             if (null == reportingType) {
@@ -117,11 +116,11 @@ public class CommonFunctions {
             properties.load(inputStream);
             String loggingType = properties.getProperty("Logger");
             if (null == loggingType) {
-                logger = new EnableSlf4jLogging();
+                logger = new LoggerSL4jImpl();
             } else if (StringUtils.equalsIgnoreCase(loggingType.toLowerCase(), "jlc")) {
-                logger = new EnableJLCLogging();
+                logger = new LoggerJLCImpl();
             } else if (StringUtils.equalsIgnoreCase(loggingType.toLowerCase(), "slf4j")) {
-                logger = new EnableSlf4jLogging();
+                logger = new LoggerSL4jImpl();
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

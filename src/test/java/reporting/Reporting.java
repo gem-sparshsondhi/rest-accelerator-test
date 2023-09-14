@@ -1,5 +1,5 @@
 package reporting;
 
 public interface Reporting {
-    void reportSteps(String title, String description);
+   void reportSteps(String title, String description);
 }

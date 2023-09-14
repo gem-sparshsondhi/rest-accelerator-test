@@ -2,8 +2,8 @@ package logging;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class EnableSlf4jLogging implements LoggerUtils {
-    private static final Logger logger = LoggerFactory.getLogger(EnableSlf4jLogging.class);
+public class LoggerSL4jImpl implements LoggerUtils {
+    private static final Logger logger = LoggerFactory.getLogger(LoggerSL4jImpl.class);
 
     @Override
     public void logInfo(String message) {
