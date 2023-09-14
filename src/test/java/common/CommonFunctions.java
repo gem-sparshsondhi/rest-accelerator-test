@@ -12,8 +12,8 @@ import io.restassured.module.jsv.JsonSchemaValidator;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
-import logging.EnableJLCLogging;
-import logging.EnableSlf4jLogging;
+import logging.LoggerUtilsLog4jImpl;
+import logging.LoggerUtilsSlf4jImpl;
 import logging.LoggerUtils;
 import net.serenitybdd.core.Serenity;
 import net.serenitybdd.core.environment.EnvironmentSpecificConfiguration;
@@ -27,9 +27,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.junit.Assert;
-import reporting.EnableGemReporting;
-import reporting.EnableSerenityReporting;
-import reporting.Reporting;
+import reporting.ReportUtilsGemImpl;
+import reporting.ReportUtilsSerenityImpl;
+import reporting.ReportUtils;
 import stepdefinitions.UtilStepDefinition;
 
 import java.io.*;
@@ -37,10 +37,14 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
+/**
+ * Ver 1.0.0
+ * Author: Sparsh Sondhi, Charu Srivastava, Touqeer Subhani
+ **/
 
 public class CommonFunctions {
-    private LoggerUtils logger = logger();
-    public Reporting reporting = reporting();
+    private LoggerUtils logger = createLogger();
+    public ReportUtils reportUtils = createReporter();
 
     public HashMap<String, RequestSpecification> reqSpecMap = new HashMap<>();
     public HashMap<String, Response> responseMap = new HashMap<>();
@@ -80,59 +84,6 @@ public class CommonFunctions {
     }
 
     /**
-     * Function implementing reporting interface
-     */
-
-    public Reporting reporting() {
-        Properties properties;
-        try {
-            properties = new Properties();
-            InputStream inputStream = getClass().getClassLoader().getResourceAsStream("config.properties");
-            properties.load(inputStream);
-            String reportingType = properties.getProperty("ReportingType");
-            if (null == reportingType) {
-                reporting = new EnableSerenityReporting();
-            } else if (StringUtils.equalsIgnoreCase(reportingType.toLowerCase(), "gemjar")) {
-                reporting = new EnableGemReporting();
-            } else if (StringUtils.equalsIgnoreCase(reportingType.toLowerCase(), "serenity")) {
-                reporting = new EnableSerenityReporting();
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return reporting;
-    }
-
-    /**
-     * Function implementing logging interface
-     */
-    public LoggerUtils logger() {
-        Properties properties;
-        try {
-            properties = new Properties();
-            InputStream inputStream = getClass().getClassLoader().getResourceAsStream("config.properties");
-            properties.load(inputStream);
-            String loggingType = properties.getProperty("Logger");
-            if (null == loggingType) {
-                logger = new EnableSlf4jLogging();
-            } else if (StringUtils.equalsIgnoreCase(loggingType.toLowerCase(), "jlc")) {
-                logger = new EnableJLCLogging();
-            } else if (StringUtils.equalsIgnoreCase(loggingType.toLowerCase(), "slf4j")) {
-                logger = new EnableSlf4jLogging();
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return logger;
-    }
-
-    /**
      * Creates a new RequestSpecification for the user to modify and use as and when required
      * <p>This is the starting point for all new requests and must be called for successful Rest request.
      *
@@ -144,7 +95,6 @@ public class CommonFunctions {
         if (!reqSpecMap.containsKey(key)) {
             latestResponseKey = key;
             reqSpecMap.put(key, reqSpec);
-            reporting.reportSteps("Create Request", "PASS: Successfully created request");
         } else {
             logger.logError("A request with this key name already exists. Please rename either request. Request to be renamed: " + key);
             Assert.fail("A request with this key name already exists. Please rename either request. Request to be renamed: " + key);
@@ -163,7 +113,6 @@ public class CommonFunctions {
             Response response = reqSpecMap.get(latestResponseKey).log().all().when().request(requestType);
             logger.logInfo("Response Body: \n\n" + response.getBody().asPrettyString());
             responseMap.put(latestResponseKey, response);
-            reporting.reportSteps("Send Request", "PASS: Successfully sent request");
         } catch (Exception e) {
             logger.logInfo("Unsupported method: " + requestType);
         }
@@ -182,7 +131,6 @@ public class CommonFunctions {
         requestType = requestType.toUpperCase();
         try {
             response = reqSpecMap.get(requestKey).log().all().when().request(requestType);
-            reporting.reportSteps("Send Request", "PASS: Successfully sent request");
         } catch (Exception e) {
             logger.logInfo("Unsupported method: " + requestType);
         }
@@ -1494,6 +1442,56 @@ public class CommonFunctions {
      */
     public void clearResponse(String key) {
         responseMap.remove(key);
+    }
+
+    /**
+     * Function implementing reporting interface
+     */
+    public ReportUtils createReporter() {
+        Properties properties;
+        try {
+            properties = new Properties();
+            InputStream inputStream = getClass().getClassLoader().getResourceAsStream("config.properties");
+            properties.load(inputStream);
+            String reportingType = properties.getProperty("ReportingType");
+            if (null == reportingType) {
+                reportUtils = new ReportUtilsSerenityImpl();
+            } else if (StringUtils.equalsIgnoreCase(reportingType.toLowerCase(), "gemjar")) {
+                reportUtils = new ReportUtilsGemImpl();
+            } else if (StringUtils.equalsIgnoreCase(reportingType.toLowerCase(), "serenity")) {
+                reportUtils = new ReportUtilsSerenityImpl();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return reportUtils;
+    }
+
+    /**
+     * Function implementing logging interface
+     */
+    public LoggerUtils createLogger() {
+        Properties properties;
+        try {
+            properties = new Properties();
+            InputStream inputStream = getClass().getClassLoader().getResourceAsStream("config.properties");
+            properties.load(inputStream);
+            String loggingType = properties.getProperty("Logger");
+            if (null == loggingType) {
+                logger = new LoggerUtilsSlf4jImpl();
+            } else if (StringUtils.equalsIgnoreCase(loggingType.toLowerCase(), "log4j")) {
+                logger = new LoggerUtilsLog4jImpl();
+            } else if (StringUtils.equalsIgnoreCase(loggingType.toLowerCase(), "slf4j")) {
+                logger = new LoggerUtilsSlf4jImpl();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return logger;
     }
 
     //------------------------------------------ Comparator Code -----------------------------------------------
