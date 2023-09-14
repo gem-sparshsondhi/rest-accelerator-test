@@ -2,7 +2,6 @@ package stepdefinitions;
 
 import common.CommonFunctions;
 import io.cucumber.datatable.DataTable;
-import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -15,72 +14,48 @@ public class ApproachTwo extends CommonFunctions {
         resetVariables();
     }
 
-    @Given("^user creates a request$")
+    @Given("^user gets first client's data$")
     public void createRequest() {
         createsRequest("GetUserDetails", "read");
-    }
-
-    @When("^user sends a GET request$")
-    public void sendGETRequest() {
         sendRequest("GET");
     }
 
-    @When("^user does status code validation$")
-    public void doStatusCodeValidation() {
-        verifyStatusCode(200);
-    }
-
-    @Then("^user does the data validations$")
+    @Then("^user performs status code and data validations$")
     public void doDataValidations(DataTable dataTable) {
+        verifyStatusCode(200);
         verifyKeyValueInResponseBody(dataTable);
     }
 
-    @Given("^user creates a request with body$")
+    @Given("^user creates a new client account$")
     public void createRequestWithBody() {
         createsRequest("CreateUser", "create");
         addHeaders("CreateUser", "Accept", "*/*");
         addBody("POSTReqBody", "CreateUser");
+        addExtractedValueToRequest("email", "user[0].email", "POSTReqBody");
+        sendRequest("POST", "CreateUser");
+        verifyStatusCode(201);
     }
 
-    @When("user extracts key from response")
+    @When("^user extracts email from response$")
     public void extractKeyFromResponse() {
         extractValue("data.email");
     }
 
-    @Then("user adds extracted value from response to request body")
-    public void addExtractedValueToRequestBody() {
-        addExtractedValueToRequest("email", "user[0].email", "POSTReqBody");
-    }
-
-    @When("user sends a POST request and validates status code")
-    public void sendPostRequestAndValidateStatusCode() {
-        sendRequest("POST", "CreateUser");
-        verifyStatusCode(201);
-    }
-
-    @Given("user creates a new request with body")
+    @Given("^user creates a new Client Account$")
     public void createNewRequestWithBody() {
         createsRequest("CreateUser", "create");
         addHeaders("CreateUser", "Accept", "*/*");
         addBody("POSTReqBody", "CreateUser");
-    }
-
-    @And("^user sends a POST request$")
-    public void sendPostRequest() {
         sendRequest("POST", "CreateUser");
-    }
-
-    @Then("^user validates status code for POST request$")
-    public void validateStatusCode() {
         verifyStatusCode(201);
     }
 
-    @Given("user creates a PUT request with body")
+    @Given("^user prepares updates for the Client Account$")
     public void userCreatesAPUTRequestWithBody() {
         createsRequest("UpdateUser", "update");
     }
 
-    @Then("^user sends PUT request and verifies status code$")
+    @Then("^user updates the Client Account$")
     public void userValidatesStatusCodeForPUTRequest() {
         sendRequest("PUT", "UpdateUser");
         verifyStatusCode(200, "UpdateUser");

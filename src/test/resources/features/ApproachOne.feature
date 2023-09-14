@@ -2,7 +2,7 @@
 Feature: Sample Detailed Scenarios
 
   @DetailedScenario1
-  Scenario: Create User from other user's data in Detail
+  Scenario: Create Client Account from other client's data (Detailed)
     Given user creates a new request named "GetUserDetails" request and sets "read" as endpoint
     When user sends a "GET" request
     Then user verifies "200" status code
@@ -25,8 +25,8 @@ Feature: Sample Detailed Scenarios
     Then user verifies "201" status code
 
 
-  @PostPut
-  Scenario: Create and update a user in Detail
+  @DetailedScenario2
+  Scenario: Create and update a Client Account (Detailed)
     Given user creates a new request named "CreateUser" request and sets "create" as endpoint
     When user adds headers to "CreateUser" request
       | Header Name | Header Value |
