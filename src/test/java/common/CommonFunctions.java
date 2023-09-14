@@ -3,16 +3,11 @@ package common;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jayway.jsonpath.Configuration;
-import com.jayway.jsonpath.DocumentContext;
-import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.PathNotFoundException;
 import io.cucumber.datatable.DataTable;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.base64.Base64;
 import io.restassured.builder.RequestSpecBuilder;
-import io.restassured.filter.log.RequestLoggingFilter;
-import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.module.jsv.JsonSchemaValidator;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
@@ -21,7 +16,6 @@ import logging.EnableJLCLogging;
 import logging.EnableSlf4jLogging;
 import logging.LoggerUtils;
 import net.serenitybdd.core.Serenity;
-import net.serenitybdd.core.environment.ConfiguredEnvironment;
 import net.serenitybdd.core.environment.EnvironmentSpecificConfiguration;
 import net.serenitybdd.rest.SerenityRest;
 import net.thucydides.core.environment.SystemEnvironmentVariables;
@@ -33,8 +27,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.junit.Assert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reporting.EnableGemReporting;
 import reporting.EnableSerenityReporting;
 import reporting.Reporting;
@@ -47,12 +39,12 @@ import java.util.*;
 
 
 public class CommonFunctions {
-
     private LoggerUtils logger = logger();
     public Reporting reporting = reporting();
-    public static HashMap<String, RequestSpecification> reqSpecMap = new HashMap<>();
-    public static HashMap<String, Response> responseMap = new HashMap<>();
-    public static String latestResponseKey = "";
+
+    public HashMap<String, RequestSpecification> reqSpecMap = new HashMap<>();
+    public HashMap<String, Response> responseMap = new HashMap<>();
+    public String latestResponseKey = "";
     static final EnvironmentVariables variables = SystemEnvironmentVariables.createEnvironmentVariables();
     static HashMap<String, String> extractedValue = new HashMap<>();
     final String environment = System.getProperty("environment");
@@ -71,7 +63,7 @@ public class CommonFunctions {
     /**
      * Function to reset all the declared variables before execution
      */
-    public static void resetVariables() {
+    public void resetVariables() {
         reqSpecMap = new HashMap<>();
         responseMap = new HashMap<>();
         latestResponseKey = "";
@@ -98,10 +90,12 @@ public class CommonFunctions {
             InputStream inputStream = getClass().getClassLoader().getResourceAsStream("config.properties");
             properties.load(inputStream);
             String reportingType = properties.getProperty("ReportingType");
-            if (StringUtils.equalsIgnoreCase(reportingType, "Serenity")) {
+            if (null == reportingType) {
                 reporting = new EnableSerenityReporting();
-            } else {
+            } else if (StringUtils.equalsIgnoreCase(reportingType.toLowerCase(), "gemjar")) {
                 reporting = new EnableGemReporting();
+            } else if (StringUtils.equalsIgnoreCase(reportingType.toLowerCase(), "serenity")) {
+                reporting = new EnableSerenityReporting();
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -122,10 +116,12 @@ public class CommonFunctions {
             InputStream inputStream = getClass().getClassLoader().getResourceAsStream("config.properties");
             properties.load(inputStream);
             String loggingType = properties.getProperty("Logger");
-            if (StringUtils.equalsIgnoreCase(loggingType, "slf4j")) {
+            if (null == loggingType) {
                 logger = new EnableSlf4jLogging();
-            } else {
+            } else if (StringUtils.equalsIgnoreCase(loggingType.toLowerCase(), "jlc")) {
                 logger = new EnableJLCLogging();
+            } else if (StringUtils.equalsIgnoreCase(loggingType.toLowerCase(), "slf4j")) {
+                logger = new EnableSlf4jLogging();
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -135,7 +131,6 @@ public class CommonFunctions {
 
         return logger;
     }
-
 
     /**
      * Creates a new RequestSpecification for the user to modify and use as and when required
@@ -162,11 +157,10 @@ public class CommonFunctions {
      *
      * @param requestType Request Method to be sent. Can be GET, POST, PUT, PATCH, DELETE
      */
-    public void hitsRequest(String requestType) {
+    public void sendRequest(String requestType) {
         requestType = requestType.toUpperCase();
         try {
-            RequestSpecification requestSpec = reqSpecMap.get(latestResponseKey);
-            Response response = requestSpec.when().log().all().request(requestType);
+            Response response = reqSpecMap.get(latestResponseKey).log().all().when().request(requestType);
             logger.logInfo("Response Body: \n\n" + response.getBody().asPrettyString());
             responseMap.put(latestResponseKey, response);
             reporting.reportSteps("Send Request", "PASS: Successfully sent request");
@@ -175,6 +169,7 @@ public class CommonFunctions {
         }
     }
 
+
     /**
      * Initiates a request based on the latest RequestSpecification.<p>
      * The Response is then saved into another Hashmap, with the same key as the RequestSpecification that created it.
@@ -182,7 +177,7 @@ public class CommonFunctions {
      * @param requestType Request Method to be sent. Can be GET, POST, PUT, PATCH, DELETE
      * @param requestKey  Key name of the request associated with this response
      */
-    public void hitsRequest(String requestType, String requestKey) {
+    public void sendRequest(String requestType, String requestKey) {
         Response response = null;
         requestType = requestType.toUpperCase();
         try {
@@ -191,7 +186,7 @@ public class CommonFunctions {
         } catch (Exception e) {
             logger.logInfo("Unsupported method: " + requestType);
         }
-        assert response != null;
+        assert null != response;
         logger.logInfo("Response Body: \n\n" + response.getBody().asPrettyString());
         responseMap.put(requestKey, response);
     }
@@ -201,7 +196,7 @@ public class CommonFunctions {
      *
      * @param methodBody Key of the method body under which request body is stored in data.json file
      */
-    public void addsBody(String methodBody) {
+    public void addBody(String methodBody) {
         reqSpecMap.get(latestResponseKey).log().all().when().body(jsonBody(methodBody, environment));
     }
 
@@ -211,7 +206,7 @@ public class CommonFunctions {
      * @param methodBody Key of the method body under which request body is stored in data.json file
      * @param requestKey Key name of the request associated with this response
      */
-    public void addsBody(String methodBody, String requestKey) {
+    public void addBody(String methodBody, String requestKey) {
         if (!reqSpecMap.containsKey(requestKey)) {
             logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
@@ -241,6 +236,7 @@ public class CommonFunctions {
         }
         reqSpecMap.get(requestKey).contentType(contentType);
     }
+
 
     /**
      * Verifies if the status code of the latest response matches expectations
@@ -300,7 +296,7 @@ public class CommonFunctions {
      * @param dt DataTable of Header Name and Header Value
      */
     public void addHeaders(DataTable dt) {
-        if (validateHeader(dt, "Header Name") && validateHeader(dt, "Header Value")) {
+        if (validateHeader(dt, "Header Name", "Header Value")) {
             List<Map<String, String>> headers = dt.asMaps();
             for (Map<String, String> header : headers) {
                 reqSpecMap.get(latestResponseKey).header(header.get("Header Name"), header.get("Header Value"));
@@ -319,7 +315,7 @@ public class CommonFunctions {
             logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
-        if (validateHeader(dt, "Header Name") && validateHeader(dt, "Header Value")) {
+        if (validateHeader(dt, "Header Name", "Header Value")) {
             List<Map<String, String>> headers = dt.asMaps();
             for (Map<String, String> header : headers) {
                 reqSpecMap.get(requestKey).header(header.get("Header Name"), header.get("Header Value"));
@@ -386,7 +382,7 @@ public class CommonFunctions {
      * @param dt DataTable of Parameter Key and Value
      */
     public void addQueryParams(DataTable dt) {
-        if (validateHeader(dt, "Parameter Key") && validateHeader(dt, "Parameter Value")) {
+        if (validateHeader(dt, "Parameter Key", "Parameter Value")) {
             List<Map<String, String>> queryParams = dt.asMaps();
             for (Map<String, String> params : queryParams) {
                 reqSpecMap.get(latestResponseKey).queryParam(params.get("Parameter Key"), params.get("Parameter Value"));
@@ -405,7 +401,7 @@ public class CommonFunctions {
             logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
-        if (validateHeader(dt, "Parameter Key") && validateHeader(dt, "Parameter Value")) {
+        if (validateHeader(dt, "Parameter Key", "Parameter Value")) {
             List<Map<String, String>> queryParams = dt.asMaps();
             for (Map<String, String> params : queryParams) {
                 reqSpecMap.get(requestKey).queryParam(params.get("Parameter Key"), params.get("Parameter Value"));
@@ -468,7 +464,7 @@ public class CommonFunctions {
      * @param dt DataTable of Parameter Key and Value
      */
     public void addFormParams(DataTable dt) {
-        if (validateHeader(dt, "Parameter Key") && validateHeader(dt, "Parameter Value")) {
+        if (validateHeader(dt, "Parameter Key", "Parameter Value")) {
             List<Map<String, String>> formParams = dt.asMaps();
             for (Map<String, String> params : formParams) {
                 reqSpecMap.get(latestResponseKey).formParam(params.get("Parameter Key"), params.get("Parameter Value"));
@@ -487,7 +483,7 @@ public class CommonFunctions {
             logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
-        if (validateHeader(dt, "Parameter Key") && validateHeader(dt, "Parameter Value")) {
+        if (validateHeader(dt, "Parameter Key", "Parameter Value")) {
             List<Map<String, String>> formParams = dt.asMaps();
             for (Map<String, String> params : formParams) {
                 reqSpecMap.get(requestKey).formParam(params.get("Parameter Key"), params.get("Parameter Value"));
@@ -553,7 +549,7 @@ public class CommonFunctions {
      */
 
     public void addPathParams(DataTable dt) {
-        if (validateHeader(dt, "Parameter Key") && validateHeader(dt, "Parameter Value")) {
+        if (validateHeader(dt, "Parameter Key", "Parameter Value")) {
             List<Map<String, String>> pathParams = dt.asMaps();
             for (Map<String, String> params : pathParams) {
                 reqSpecMap.get(latestResponseKey).pathParam(params.get("Parameter Key"), params.get("Parameter Value"));
@@ -572,7 +568,7 @@ public class CommonFunctions {
             logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
-        if (validateHeader(dt, "Parameter Key") && validateHeader(dt, "Parameter Value")) {
+        if (validateHeader(dt, "Parameter Key", "Parameter Value")) {
             List<Map<String, String>> pathParams = dt.asMaps();
             for (Map<String, String> params : pathParams) {
                 reqSpecMap.get(requestKey).pathParam(params.get("Parameter Key"), params.get("Parameter Value"));
@@ -631,7 +627,7 @@ public class CommonFunctions {
      * Function to validate header name of the datatable passed from the feature file
      *
      * @param dataTable       dataTable which is passed from feature file
-     * @param expectedHeaders expected header name
+     * @param expectedHeaders List of expected header nams
      */
     public boolean validateHeader(DataTable dataTable, String... expectedHeaders) {
         boolean allHeadersFound = true;
@@ -676,7 +672,6 @@ public class CommonFunctions {
         if (!responseMap.containsKey(requestKey)) {
             logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
-            return;
         }
         extractedValue.put(key, responseMap.get(requestKey).jsonPath().getString(key));
     }
@@ -693,10 +688,8 @@ public class CommonFunctions {
         reqSpecMap.get(latestResponseKey).log().all().when().body(jsonBody(methodBody, environment, newKeyPath, extractedValue.get(keyToAdd), true));
     }
 
-
     /**
      * Adds the extracted key value from another response body to the request body the specified request
-     * <p>
      *
      * @param newKeyPath JsonPath of the Key which needs to be added in method body
      * @param keyToAdd   Name of the Key which needs to be added
@@ -713,8 +706,6 @@ public class CommonFunctions {
      * @param endpoint The endpoint at which request will get hit
      */
     public RequestSpecification requestSpecifications(String endpoint) {
-        File logDir = new File("src/test/java/Logs/");
-        File logFile = new File(logDir, "logging.txt");
         RequestSpecification req = SerenityRest.given();
         String baseUri = EnvironmentSpecificConfiguration.from(variables).getProperty(endpoint);
 
@@ -738,27 +729,9 @@ public class CommonFunctions {
             baseUri = baseUri.substring(0, queryParamIndex);
         }
 
-        // Verify presence of log file. Create one if it doesn't exist.
-        if (!logFile.exists()) {
-            try {
-                logFile.createNewFile();
-            } catch (Exception e) {
-                logger.logError("Failed to create logging.txt file for Logging. Please manually create a logging.txt file in src/test/java/Logs/");
-                Assert.fail("Failed to create logging.txt file for Logging. Please manually create a logging.txt file in src/test/java/Logs/");
-            }
-        }
-
-        try {
-            PrintStream log = new PrintStream(new FileOutputStream(logFile));
-            req = new RequestSpecBuilder()
-                    .setBaseUri(baseUri)
-                    .addFilter(RequestLoggingFilter.logRequestTo(log))
-                    .addFilter(ResponseLoggingFilter.logResponseTo(log))
-                    .build();
-            return req;
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
+        req = new RequestSpecBuilder()
+                .setBaseUri(baseUri)
+                .build();
         return req;
     }
 
@@ -771,7 +744,7 @@ public class CommonFunctions {
         Response res = responseMap.get(latestResponseKey);
         String responseMessage = res.body().asPrettyString();
         if (responseMessage.contains(expectedMessage)) {
-            logger.logInfo("Successfully found " + expectedMessage + " is Response body");
+            logger.logInfo("Successfully found " + expectedMessage + " is Response body", true);
         } else {
             logger.logError("Unable to find \"" + expectedMessage + "\" in Response body");
             Assert.fail("Unable to find \"" + expectedMessage + "\" in Response body");
@@ -948,7 +921,7 @@ public class CommonFunctions {
         Response res = responseMap.get(latestResponseKey);
         JsonPath jsonPath = res.jsonPath();
         List<Map<String, String>> verificationList = verificationData.asMaps();
-        if (validateHeader(verificationData, "Key") && validateHeader(verificationData, "operation") && validateHeader(verificationData, "Value")) {
+        if (validateHeader(verificationData, "Key", "operation", "Value")) {
             for (Map<String, String> verification : verificationList) {
                 String key = verification.get("Key");
                 String operation = verification.get("operation");
@@ -1003,7 +976,7 @@ public class CommonFunctions {
         Response res = responseMap.get(responseKey);
         JsonPath jsonPath = res.jsonPath();
         List<Map<String, String>> verificationList = verificationData.asMaps();
-        if (validateHeader(verificationData, "Key") && validateHeader(verificationData, "operation") && validateHeader(verificationData, "Value")) {
+        if (validateHeader(verificationData, "Key", "operation", "Value")) {
 
             for (Map<String, String> verification : verificationList) {
                 String key = verification.get("Key");
@@ -1239,6 +1212,7 @@ public class CommonFunctions {
             logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
+
         reqSpecMap.get(requestKey).relaxedHTTPSValidation();
     }
 
@@ -1309,8 +1283,7 @@ public class CommonFunctions {
      * @param mimeType    MIME type of the file to be uploaded
      * @param requestKey  Key name of the request associated with this response
      */
-    public void addMultipartFileToRequestWithMIMEType(String filename, String controlName, String mimeType, String
-            requestKey) {
+    public void addMultipartFileToRequestWithMIMEType(String filename, String controlName, String mimeType, String requestKey) {
         if (!reqSpecMap.containsKey(requestKey)) {
             logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
@@ -1372,7 +1345,6 @@ public class CommonFunctions {
      * @param newKeyPath  The Json Path of the new key that is to be added
      * @param keyToAdd    The key whose value is fetched from another response and needs to be added in the body of new request
      */
-
     public String jsonBody(String key, String environment, String newKeyPath, String keyToAdd, boolean overwrite) {
         String fileName = environment.toLowerCase() + "_data.json";
         try {
@@ -1380,8 +1352,6 @@ public class CommonFunctions {
             String jsonContent = new String(Files.readAllBytes(Paths.get(fullPath)));
             JSONObject parentObject = new JSONObject(jsonContent);
             JSONObject jsonObject = parentObject.getJSONObject(key);
-
-            // Split the newKeyPath to navigate through the JSON structure
             String[] keys = newKeyPath.split("\\.");
             JSONObject nestedObject = jsonObject;
 
@@ -1454,7 +1424,6 @@ public class CommonFunctions {
         }
     }
 
-
     /**
      * Adds basic authentication to the latest request
      * Fetches credentials from serenity.conf file
@@ -1466,10 +1435,8 @@ public class CommonFunctions {
     }
 
     /**
-     * Adds basic authentication to the latest request
+     * Adds basic authentication to the specified request
      * Fetches credentials from serenity.conf file
-     *
-     * @param requestKey Key name of the request associated with this response
      */
     public void addBasicAuth(String requestKey) {
         String username = EnvironmentSpecificConfiguration.from(variables).getProperty("username");
@@ -1482,8 +1449,8 @@ public class CommonFunctions {
      * Fetches Bearer token from serenity.conf file
      */
     public void addBearerAuth() {
-        String token = UtilStepDefinition.generateAccessToken();
-        // The above function can be modified to generate a Bearer token. Modify the input parameters accordingly, and comment out the next line.
+        String token = UtilStepDefinition.generateBearerToken();
+        // The above function "generateAccessToken()" can be modified to generate a Bearer token.
         reqSpecMap.get(latestResponseKey).headers("Authorization", "Bearer " + token);
     }
 
@@ -1492,8 +1459,8 @@ public class CommonFunctions {
      * Fetches Bearer token from serenity.conf file
      */
     public void addBearerAuth(String requestKey) {
-        String token = UtilStepDefinition.generateAccessToken();
-        // The above function can be modified to generate a Bearer token. Modify the input parameters accordingly, and comment out the next line.
+        String token = UtilStepDefinition.generateBearerToken();
+        // The above function "generateAccessToken()" can be modified to generate a Bearer token.
         reqSpecMap.get(requestKey).headers("Authorization", "Bearer " + token);
     }
 
@@ -1535,15 +1502,15 @@ public class CommonFunctions {
      * Json Comparison is performed based on the type of Json
      */
 
-    public void performComparison() throws IOException {
-        if (typeJSON().equalsIgnoreCase("object")) {
+    public void performComparison(String response1, String responseKey2) throws IOException {
+        if (typeJSON(response1, responseKey2).equalsIgnoreCase("object")) {
             JSONObject expected = getExpectedJsonObject();
             JSONObject observed = getResultJsonObject();
             //compares two JSON objects and returns the HashSet containing all the differences
             HashSet<String> jsonDiff = compareJsonObject(expected, observed);
             //passes the HashSet containing differences to update the automation report.
             updateReport(jsonDiff);
-        } else if (typeJSON().equalsIgnoreCase("array")) {
+        } else if (typeJSON(response1, responseKey2).equalsIgnoreCase("array")) {
             JSONArray expected = getExpectedJSONArray();
             JSONArray observed = getResultJSONArray();
             //compares two JSON Arrays and returns the HashSet containing all the differences
@@ -1558,28 +1525,10 @@ public class CommonFunctions {
      *
      * @return type Of Json
      */
-    public String typeJSON() throws IOException {
-        FileReader reader = new FileReader("src/test/resources/serenity.properties");
-        Properties p = new Properties();
-        p.load(reader);
-
-        expectedJson = "";
-        res = "";
+    public String typeJSON(String response1, String responseKey2) {
         String type = null;
-        String path = System.getProperty("user.dir");
-        File jsonFile = new File(path + p.getProperty("filePath1"));
-        File resFile = new File(path + p.getProperty("filePath2"));
-
-        try (Scanner sc = new Scanner(jsonFile)) {
-            while (sc.hasNextLine()) {
-                expectedJson = expectedJson + sc.nextLine();
-            }
-        }
-        try (Scanner sc = new Scanner(resFile)) {
-            while (sc.hasNextLine()) {
-                res = res + sc.nextLine();
-            }
-        }
+        expectedJson = responseMap.get(response1).asPrettyString();
+        res = res + responseMap.get(responseKey2).asPrettyString();
 
         Object expJson = new JSONTokener(expectedJson).nextValue();
         Object respJson = new JSONTokener(res).nextValue();
@@ -1978,9 +1927,7 @@ public class CommonFunctions {
      * Function to match json Values
      */
 
-    public void matchJsonValues
-    (Map<String, Object> resultMap, Map<String, Object> expectedMap, Iterator<String> it, Object
-            mismatchedKeys) {
+    public void matchJsonValues(Map<String, Object> resultMap, Map<String, Object> expectedMap, Iterator<String> it, Object mismatchedKeys) {
         List<String> keysNotToMatch;
 
         //if there are some keys to be omitted

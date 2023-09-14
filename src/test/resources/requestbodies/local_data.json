@@ -1,9 +1,10 @@
 {
   "POSTReqBody": {
-    "data": [{"email": "janet.weaver@reqres.in"}],
     "surname": "David",
     "name": "morpheus",
-    "job": "leader"
+    "job": "leader",
+    "user": [{"email": "janet.weaver@reqres.in"}],
+    "email": "email"
   },
   "PATCHReqBody": {
     "name": "morpheus",

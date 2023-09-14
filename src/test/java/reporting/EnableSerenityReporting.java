@@ -1,7 +1,5 @@
 package reporting;
-
 import net.serenitybdd.core.Serenity;
-
 public class EnableSerenityReporting implements Reporting {
 
     @Override

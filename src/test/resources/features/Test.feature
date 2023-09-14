@@ -46,7 +46,7 @@ Feature: Sample Feature file to demonstrate all the accelerator functions
 #   AddBody
     When user adds "POSTReqBody" body
 #    Hit Request
-    When user makes a "post" request
+    When user sends a "post" request
 #    Extract Keys
     When user extracts the following keys from response
       | Key Path   |
@@ -86,7 +86,7 @@ Feature: Sample Feature file to demonstrate all the accelerator functions
       | key           | val           |
     When user adds Form Param key "Parameter Key" and param value "Parameter value" to "requestTwo" request
 #    Make request
-    When user makes "get" request for "requestTwo" request
+    When user sends "get" request for "requestTwo" request
 
     Given user creates a new request named "requestThree" request and sets "custom" as endpoint
 #    Multipart Files
@@ -144,6 +144,11 @@ Feature: Sample Feature file to demonstrate all the accelerator functions
     When user clears all requests
     When user clears all responses
 
-
+  @JsonComparator
+  Scenario: Json Comparator sample scenario
+    Given user creates a new request named "response1" request and sets "read" as endpoint
+    When user sends a "GET" request
+    Given user creates a new request named "response2" request and sets "read" as endpoint
+    When user sends a "GET" request
     #Json Comparison
     When user perform Json comparison
