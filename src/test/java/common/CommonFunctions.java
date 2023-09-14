@@ -1247,7 +1247,7 @@ public class CommonFunctions {
     }
 
     /**
-     * Reads the Json.Request directory for an environment specific Body file and extracts the desired body based on the passed key
+     * Reads the "requestbodies" directory for an environment specific Body file and extracts the desired body based on the passed key
      *
      * @param key         Key of the particular json body which will be passed as a request
      * @param environment Data is fetched from files based on the environment
@@ -1284,7 +1284,7 @@ public class CommonFunctions {
     }
 
     /**
-     * Reads the Json.Request directory for an environment specific Body file and extracts the desired body based on the passed key
+     * Reads the "requestbodies" directory for an environment specific Body file and extracts the desired body based on the passed key
      * Then, adds values extracted from other responses to specified JsonPaths
      * <p>This function is used when the request body of one request depends on the response of another</p>
      *
