@@ -1,6 +1,6 @@
 {
   "POSTReqBody": {
-    "data": {"email": "janet.weaver@reqres.in"},
+    "data": [{"email": "janet.weaver@reqres.in"}],
     "surname": "David",
     "name": "morpheus",
     "job": "leader"
