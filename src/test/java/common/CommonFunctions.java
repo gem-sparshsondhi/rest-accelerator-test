@@ -102,6 +102,41 @@ public class CommonFunctions {
     }
 
     /**
+     * This function creates and returns the request specifications with a set endpoint.
+     *
+     * @param endpoint The endpoint at which request will get hit
+     */
+    public RequestSpecification requestSpecifications(String endpoint) {
+        RequestSpecification req = SerenityRest.given();
+        String baseUri = EnvironmentSpecificConfiguration.from(variables).getProperty(endpoint);
+
+        // Check if query parameters are present in the endpoint
+        if (baseUri.contains("?")) {
+            // Add query parameters if present in the endpoint
+            String[] paramArray = baseUri.split("\\?")[1].split("&");
+            for (String param : paramArray) {
+                String[] keyValue = param.split("=");
+                if (keyValue.length == 2) {
+                    String paramName = keyValue[0].trim();
+                    String paramValue = keyValue[1].trim();
+                    req.queryParam(paramName, paramValue);
+                }
+            }
+        }
+
+        // Set Base URI after trimming Query Params
+        int queryParamIndex = baseUri.indexOf("?");
+        if (queryParamIndex != -1) {
+            baseUri = baseUri.substring(0, queryParamIndex);
+        }
+
+        req = new RequestSpecBuilder()
+                .setBaseUri(baseUri)
+                .build();
+        return req;
+    }
+
+    /**
      * Initiates a request based on the latest RequestSpecification.<p>
      * The Response is then saved into another Hashmap, with the same key as the RequestSpecification that created it.
      *
@@ -244,7 +279,7 @@ public class CommonFunctions {
      * @param dt DataTable of Header Name and Header Value
      */
     public void addHeaders(DataTable dt) {
-        if (validateHeader(dt, "Header Name", "Header Value")) {
+        if (validateDataTableHeaders(dt, "Header Name", "Header Value")) {
             List<Map<String, String>> headers = dt.asMaps();
             for (Map<String, String> header : headers) {
                 reqSpecMap.get(latestResponseKey).header(header.get("Header Name"), header.get("Header Value"));
@@ -263,7 +298,7 @@ public class CommonFunctions {
             logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
-        if (validateHeader(dt, "Header Name", "Header Value")) {
+        if (validateDataTableHeaders(dt, "Header Name", "Header Value")) {
             List<Map<String, String>> headers = dt.asMaps();
             for (Map<String, String> header : headers) {
                 reqSpecMap.get(requestKey).header(header.get("Header Name"), header.get("Header Value"));
@@ -330,7 +365,7 @@ public class CommonFunctions {
      * @param dt DataTable of Parameter Key and Value
      */
     public void addQueryParams(DataTable dt) {
-        if (validateHeader(dt, "Parameter Key", "Parameter Value")) {
+        if (validateDataTableHeaders(dt, "Parameter Key", "Parameter Value")) {
             List<Map<String, String>> queryParams = dt.asMaps();
             for (Map<String, String> params : queryParams) {
                 reqSpecMap.get(latestResponseKey).queryParam(params.get("Parameter Key"), params.get("Parameter Value"));
@@ -349,7 +384,7 @@ public class CommonFunctions {
             logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
-        if (validateHeader(dt, "Parameter Key", "Parameter Value")) {
+        if (validateDataTableHeaders(dt, "Parameter Key", "Parameter Value")) {
             List<Map<String, String>> queryParams = dt.asMaps();
             for (Map<String, String> params : queryParams) {
                 reqSpecMap.get(requestKey).queryParam(params.get("Parameter Key"), params.get("Parameter Value"));
@@ -412,7 +447,7 @@ public class CommonFunctions {
      * @param dt DataTable of Parameter Key and Value
      */
     public void addFormParams(DataTable dt) {
-        if (validateHeader(dt, "Parameter Key", "Parameter Value")) {
+        if (validateDataTableHeaders(dt, "Parameter Key", "Parameter Value")) {
             List<Map<String, String>> formParams = dt.asMaps();
             for (Map<String, String> params : formParams) {
                 reqSpecMap.get(latestResponseKey).formParam(params.get("Parameter Key"), params.get("Parameter Value"));
@@ -431,7 +466,7 @@ public class CommonFunctions {
             logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
-        if (validateHeader(dt, "Parameter Key", "Parameter Value")) {
+        if (validateDataTableHeaders(dt, "Parameter Key", "Parameter Value")) {
             List<Map<String, String>> formParams = dt.asMaps();
             for (Map<String, String> params : formParams) {
                 reqSpecMap.get(requestKey).formParam(params.get("Parameter Key"), params.get("Parameter Value"));
@@ -497,7 +532,7 @@ public class CommonFunctions {
      */
 
     public void addPathParams(DataTable dt) {
-        if (validateHeader(dt, "Parameter Key", "Parameter Value")) {
+        if (validateDataTableHeaders(dt, "Parameter Key", "Parameter Value")) {
             List<Map<String, String>> pathParams = dt.asMaps();
             for (Map<String, String> params : pathParams) {
                 reqSpecMap.get(latestResponseKey).pathParam(params.get("Parameter Key"), params.get("Parameter Value"));
@@ -516,7 +551,7 @@ public class CommonFunctions {
             logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
             Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
         }
-        if (validateHeader(dt, "Parameter Key", "Parameter Value")) {
+        if (validateDataTableHeaders(dt, "Parameter Key", "Parameter Value")) {
             List<Map<String, String>> pathParams = dt.asMaps();
             for (Map<String, String> params : pathParams) {
                 reqSpecMap.get(requestKey).pathParam(params.get("Parameter Key"), params.get("Parameter Value"));
@@ -561,7 +596,7 @@ public class CommonFunctions {
 
     public void extractValues(DataTable keys) {
         List<Map<String, String>> keyMaps = keys.asMaps();
-        if (validateHeader(keys, "Key Path")) {
+        if (validateDataTableHeaders(keys, "Key Path")) {
             for (Map<String, String> keyMap : keyMaps) {
                 String key = keyMap.get("Key Path");
                 extractedValue.put(key, responseMap.get(latestResponseKey).jsonPath().getString(key));
@@ -571,34 +606,15 @@ public class CommonFunctions {
         }
     }
 
-    /**
-     * Function to validate header name of the datatable passed from the feature file
-     *
-     * @param dataTable       dataTable which is passed from feature file
-     * @param expectedHeaders List of expected header nams
-     */
-    public boolean validateHeader(DataTable dataTable, String... expectedHeaders) {
-        boolean allHeadersFound = true;
-        for (String expectedHeader : expectedHeaders) {
-            List<String> actualHeaders = dataTable.row(0);
-            if (!actualHeaders.contains(expectedHeader)) {
-                logger.logError("Expected header: " + expectedHeader + "Not Found.");
-                allHeadersFound = false;
-                break;
-            }
-        }
-        return allHeadersFound;
-    }
 
-
-    public void extractValues(DataTable keys, String requestKey) {
-        if (!responseMap.containsKey(requestKey)) {
-            logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
-            Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+    public void extractValues(DataTable keys, String responseKey) {
+        if (!responseMap.containsKey(responseKey)) {
+            logger.logError("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
+            Assert.fail("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
             return;
         }
         List<Map<String, String>> keyMaps = keys.asMaps();
-        if (validateHeader(keys, "Key Path")) {
+        if (validateDataTableHeaders(keys, "Key Path")) {
             for (Map<String, String> keyMap : keyMaps) {
                 String key = keyMap.get("Key Path");
                 extractedValue.put(key, responseMap.get(latestResponseKey).jsonPath().getString(key));
@@ -613,15 +629,15 @@ public class CommonFunctions {
      * Extract value of a key from the specified response
      *
      * @param key        The key whose value needs to get logged
-     * @param requestKey The Response which needs to be referred to for key-value extraction
+     * @param responseKey The Response which needs to be referred to for key-value extraction
      */
 
-    public void extractValue(String key, String requestKey) {
-        if (!responseMap.containsKey(requestKey)) {
-            logger.logError("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
-            Assert.fail("No such request found: " + requestKey + ". Kindly re-check the Request Name.");
+    public void extractValue(String key, String responseKey) {
+        if (!responseMap.containsKey(responseKey)) {
+            logger.logError("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
+            Assert.fail("No such request found: " + responseKey + ". Kindly re-check the Request Name.");
         }
-        extractedValue.put(key, responseMap.get(requestKey).jsonPath().getString(key));
+        extractedValue.put(key, responseMap.get(responseKey).jsonPath().getString(key));
     }
 
     /**
@@ -646,41 +662,6 @@ public class CommonFunctions {
 
     public void addExtractedValueToRequest(String keyToAdd, String newKeyPath, String methodBody, String requestKey) {
         reqSpecMap.get(requestKey).log().all().when().body(jsonBody(methodBody, environment, newKeyPath, extractedValue.get(keyToAdd), true));
-    }
-
-    /**
-     * This function creates and returns the request specifications with a set endpoint.
-     *
-     * @param endpoint The endpoint at which request will get hit
-     */
-    public RequestSpecification requestSpecifications(String endpoint) {
-        RequestSpecification req = SerenityRest.given();
-        String baseUri = EnvironmentSpecificConfiguration.from(variables).getProperty(endpoint);
-
-        // Check if query parameters are present in the endpoint
-        if (baseUri.contains("?")) {
-            // Add query parameters if present in the endpoint
-            String[] paramArray = baseUri.split("\\?")[1].split("&");
-            for (String param : paramArray) {
-                String[] keyValue = param.split("=");
-                if (keyValue.length == 2) {
-                    String paramName = keyValue[0].trim();
-                    String paramValue = keyValue[1].trim();
-                    req.queryParam(paramName, paramValue);
-                }
-            }
-        }
-
-        // Set Base URI after trimming Query Params
-        int queryParamIndex = baseUri.indexOf("?");
-        if (queryParamIndex != -1) {
-            baseUri = baseUri.substring(0, queryParamIndex);
-        }
-
-        req = new RequestSpecBuilder()
-                .setBaseUri(baseUri)
-                .build();
-        return req;
     }
 
     /**
@@ -869,7 +850,7 @@ public class CommonFunctions {
         Response res = responseMap.get(latestResponseKey);
         JsonPath jsonPath = res.jsonPath();
         List<Map<String, String>> verificationList = verificationData.asMaps();
-        if (validateHeader(verificationData, "Key", "operation", "Value")) {
+        if (validateDataTableHeaders(verificationData, "Key", "operation", "Value")) {
             for (Map<String, String> verification : verificationList) {
                 String key = verification.get("Key");
                 String operation = verification.get("operation");
@@ -924,7 +905,7 @@ public class CommonFunctions {
         Response res = responseMap.get(responseKey);
         JsonPath jsonPath = res.jsonPath();
         List<Map<String, String>> verificationList = verificationData.asMaps();
-        if (validateHeader(verificationData, "Key", "operation", "Value")) {
+        if (validateDataTableHeaders(verificationData, "Key", "operation", "Value")) {
 
             for (Map<String, String> verification : verificationList) {
                 String key = verification.get("Key");
@@ -1442,6 +1423,25 @@ public class CommonFunctions {
      */
     public void clearResponse(String key) {
         responseMap.remove(key);
+    }
+
+    /**
+     * Function to validate header name of the datatable passed from the feature file
+     *
+     * @param dataTable       dataTable which is passed from feature file
+     * @param expectedHeaders List of expected header nams
+     */
+    public boolean validateDataTableHeaders(DataTable dataTable, String... expectedHeaders) {
+        boolean allHeadersFound = true;
+        for (String expectedHeader : expectedHeaders) {
+            List<String> actualHeaders = dataTable.row(0);
+            if (!actualHeaders.contains(expectedHeader)) {
+                logger.logError("Expected header: " + expectedHeader + "Not Found.");
+                allHeadersFound = false;
+                break;
+            }
+        }
+        return allHeadersFound;
     }
 
     /**

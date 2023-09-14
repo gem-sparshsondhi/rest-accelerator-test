@@ -16,7 +16,7 @@ public class ApproachTwo extends CommonFunctions {
 
     @Given("^user gets first client's data$")
     public void createRequest() {
-        createsRequest("GetUserDetails", "read");
+        createsRequest("GetClientDetails", "read");
         sendRequest("GET");
     }
 
@@ -28,11 +28,11 @@ public class ApproachTwo extends CommonFunctions {
 
     @Given("^user creates a new client account$")
     public void createRequestWithBody() {
-        createsRequest("CreateUser", "create");
-        addHeaders("CreateUser", "Accept", "*/*");
-        addBody("POSTReqBody", "CreateUser");
+        createsRequest("CreateClientAccount", "create");
+        addHeaders("CreateClientAccount", "Accept", "*/*");
+        addBody("POSTReqBody", "CreateClientAccount");
         addExtractedValueToRequest("email", "user[0].email", "POSTReqBody");
-        sendRequest("POST", "CreateUser");
+        sendRequest("POST", "CreateClientAccount");
         verifyStatusCode(201);
     }
 
@@ -43,21 +43,21 @@ public class ApproachTwo extends CommonFunctions {
 
     @Given("^user creates a new Client Account$")
     public void createNewRequestWithBody() {
-        createsRequest("CreateUser", "create");
-        addHeaders("CreateUser", "Accept", "*/*");
-        addBody("POSTReqBody", "CreateUser");
-        sendRequest("POST", "CreateUser");
+        createsRequest("CreateClientAccount", "create");
+        addHeaders("CreateClientAccount", "Accept", "*/*");
+        addBody("POSTReqBody", "CreateClientAccount");
+        sendRequest("POST", "CreateClientAccount");
         verifyStatusCode(201);
     }
 
     @Given("^user prepares updates for the Client Account$")
     public void userCreatesAPUTRequestWithBody() {
-        createsRequest("UpdateUser", "update");
+        createsRequest("UpdateClientAccount", "update");
     }
 
     @Then("^user updates the Client Account$")
     public void userValidatesStatusCodeForPUTRequest() {
-        sendRequest("PUT", "UpdateUser");
-        verifyStatusCode(200, "UpdateUser");
+        sendRequest("PUT", "UpdateClientAccount");
+        verifyStatusCode(200, "UpdateClientAccount");
     }
 }
