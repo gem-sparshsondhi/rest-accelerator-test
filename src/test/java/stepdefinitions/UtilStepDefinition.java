@@ -1,6 +1,6 @@
 package stepdefinitions;
 
-import common.CommonFunctions;
+import common.GenericFunctions;
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class UtilStepDefinition extends CommonFunctions {
+public class UtilStepDefinition extends GenericFunctions {
     @BeforeScenario
     public void initializeVariables() {
         resetVariables();

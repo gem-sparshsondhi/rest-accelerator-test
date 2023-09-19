@@ -1,34 +1,37 @@
 package logging;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class LoggerSL4jImpl implements LoggerUtils {
-    private static final Logger logger = LoggerFactory.getLogger(LoggerSL4jImpl.class);
 
-    @Override
+import org.apache.log4j.Logger;
+
+/**
+ * Ver 1.0.0
+ * Author: Sparsh Sondhi, Charu Srivastava, Touqeer Subhani
+ **/
+public class LoggerUtilsLog4jImpl implements LoggerUtils {
+    static Logger logger = Logger.getLogger(LoggerUtilsLog4jImpl.class.getName());
+
     public void logInfo(String message) {
         logger.info(message);
     }
 
-    @Override
     public void logInfo(String message, boolean val) {
-        logger.info(message, val);
+        logger.info(message);
     }
 
-    @Override
     public void logError(String message) {
         logger.error(message);
     }
-    @Override
+
     public void logDebug(String message) {
         logger.debug(message);
     }
-    @Override
+
     public void logWarning(String message) {
         logger.warn(message);
     }
-    @Override
+
     public void logTrace(String message) {
         logger.trace(message);
     }
 }
+
