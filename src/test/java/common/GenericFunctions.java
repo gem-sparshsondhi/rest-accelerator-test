@@ -42,7 +42,7 @@ import java.util.*;
  * Author: Sparsh Sondhi, Charu Srivastava, Touqeer Subhani
  **/
 
-public class CommonFunctions {
+public class GenericFunctions {
     private LoggerUtils logger = createLogger();
     public ReportUtils reportUtils = createReporter();
 

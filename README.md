@@ -29,6 +29,4 @@ Below is approach #2 Feature File:
 
 ## Appendix
 
-Gemini Rest Accelerator aims at transforming API testing. It is user-friendly as it is designed to cater to all expertise levels by removing coding complexities. With features like codeless automation, simplified endpoint management, and powerful response validation, it's an excellent choice for both internal projects and clients.  
-
-
+Gemini Rest Accelerator aims at transforming API testing. It is user-friendly as it is designed to cater to all expertise levels by removing coding complexities. With features like codeless automation, simplified endpoint management, and powerful response validation, it's an excellent choice for both internal projects and clients.

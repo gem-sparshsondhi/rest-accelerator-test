@@ -3,6 +3,7 @@
     "surname": "David",
     "name": "morpheus",
     "job": "leader",
+    "user": [{"email": "janet.weaver@reqres.in"}],
     "email": "email"
   },
   "PATCHReqBody": {

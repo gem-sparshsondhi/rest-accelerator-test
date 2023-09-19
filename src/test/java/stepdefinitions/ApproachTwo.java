@@ -1,13 +1,13 @@
 package stepdefinitions;
 
-import common.CommonFunctions;
+import common.GenericFunctions;
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import net.serenitybdd.core.annotations.events.BeforeScenario;
 
-public class ApproachTwo extends CommonFunctions {
+public class ApproachTwo extends GenericFunctions {
 
     @BeforeScenario
     public void initializeVariables() {
