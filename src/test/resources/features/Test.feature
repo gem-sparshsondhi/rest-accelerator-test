@@ -15,29 +15,29 @@ Feature: Sample Feature file to demonstrate all the accelerator functions
     When user sets relaxed HTTPS validation
     When user sets url encoding to "false"
 #    Headers
+    When user adds header named "header1" with value "value1" to the request
     When user adds headers to the request
       | Header Name | Header Value |
       | header1     | value1       |
       | header2     | value2       |
-    When user add headers name "header1" and header value "value1" to the request
-    When user add headers as map to the request
+    When user adds headers as map to the request
 #    QueryParams
+    When user adds Query Parameter named "Parameter Key" with value "Parameter value" to the request
     When user adds Query Params to the request
       | Parameter Key | Parameter Value |
       | Key1          | Val1            |
-    When user add Query Param key "Parameter Key" and param value "Parameter value" to the request
     When user adds Query Param as map to the request
 #    FormParams
+    When user adds Form Parameter named "Parameter Key" with value "Parameter value" to the request
     When user adds form parameters
       | Parameter Key | Parameter Key |
       | key           | val           |
-    When user add Form Param key "Parameter Key" and param value "Parameter value" to the request
     When user adds Form Param as map to the request
 #    PathParams
+    When user adds Path Parameter named "Parameter Key" with value "Parameter value" to the request
     When user adds path parameters
       | Parameter Key | Parameter Key |
       | key           | val           |
-    When user add Path Param key "Parameter Key" and param value "Parameter value" to the request
     When user adds Path Param as map to the request
 #    multipart files
     When user sets Content-Type as "multipart/form-data"
@@ -48,12 +48,12 @@ Feature: Sample Feature file to demonstrate all the accelerator functions
 #    Hit Request
     When user sends a "post" request
 #    Extract Keys
+    When user extracts "data.email" from response
     When user extracts the following keys from response
       | Key Path   |
       | data.email |
-    When user extracts "data.email" from response
 #    Add Extracted key to request body
-    When user adds extracted value of key "email" at "email" path in "POSTReqBody" request body
+    When user adds extracted value of key "data.email" at "user.email" path in "POSTReqBody" request body
 
     #---------------------------------------------- multiple requests------------------------------------
 
@@ -62,29 +62,29 @@ Feature: Sample Feature file to demonstrate all the accelerator functions
     When user sets relaxed HTTPS validation for "requestTwo" request
     When user sets url encoding to "false" for "requestTwo" request
 # Headers
+    When user adds header named "header1" with value "value1" for "requestTwo" request
     When user adds headers to "requestTwo" request
       | Header Name | Header Value |
       | header1     | value1       |
-    When user adds header name "header1" and header value "value1" for "requestTwo" request
-    When user add headers as map for "requestTwo" request
+    When user adds headers as map for "requestTwo" request
 #  QueryParams
-    When user add Query Params to "requestTwo" request
+    When user adds Query Parameter named "Parameter Key" with value "Parameter value" to "requestTwo" request
+    When user adds Query Params to "requestTwo" request
       | Parameter Key | Parameter Value |
       | Key1          | Val1            |
-    When user add Query Param as map for "requestTwo" request
-    When user adds Query Param key "Parameter Key" and param value "Parameter value" to "requestTwo" request
+    When user adds Query Param as map for "requestTwo" request
 #    PathParams
-    When user add path parameters to "PostData" request
+    When user adds Path Parameter named "Parameter Key" with value "Parameter value" to "requestTwo" request
+    When user adds path parameters to "PostData" request
       | Parameter Key | Parameter Key |
       | key           | val           |
-    When user add Path Param as map for "requestTwo" request
-    When user adds Path Param key "Parameter Key" and param value "Parameter value" to "requestTwo" request
+    When user adds Path Param as map for "requestTwo" request
 #    FormParams
-    When user add Form Param as map for "requestTwo" request
-    When user add form parameters to "PostData" request
+    When user adds Form Parameter named "Parameter Key" with value "Parameter value" to "requestTwo" request
+    When user adds form parameters to "PostData" request
       | Parameter Key | Parameter Key |
       | key           | val           |
-    When user adds Form Param key "Parameter Key" and param value "Parameter value" to "requestTwo" request
+    When user adds Form Param as map for "requestTwo" request
 #    Make request
     When user sends "get" request for "requestTwo" request
 
@@ -108,11 +108,11 @@ Feature: Sample Feature file to demonstrate all the accelerator functions
     #single request
   Scenario: Response Validation functions
     Then user verifies state of key-value in response body
-      | Key             | operation    | Value   |
-      | type            | equals       | donut   |
-      | type            | not equals   | Glaazed |
-      | topping[1].type | contains     | Glazed  |
-      | topping[1].type | not contains | janeta  |
+      | Key             | operation    | Value     |
+      | type            | equals       | donut     |
+      | type            | not equals   | Sprinkled |
+      | topping[1].type | contains     | Glazed    |
+      | topping[1].type | not contains | janeta    |
     Then user verifies the response matches "testSchema" schema
     Then user verifies the size of array with key "topping" is "7" in response body
     Then user verifies the response time taken is less than "7" seconds in response body
@@ -151,4 +151,4 @@ Feature: Sample Feature file to demonstrate all the accelerator functions
     Given user creates a new request named "response2" request and sets "read" as endpoint
     When user sends a "GET" request
     #Json Comparison
-    When user perform Json comparison
+    When user compares response "response1" with "response2" response using JSON Comparator
